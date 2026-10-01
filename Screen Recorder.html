@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grabador de pantalla</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F3F7FF;--surface:#FFFFFF;--ink:#0F2547;--muted:#5B6B87;
+  --blue:#2563EB;--blue-strong:#1D4ED8;--soft:#E3ECFF;--line:#D6E2F8;--rec:#E5484D;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1426;--surface:#111D36;--ink:#E7EEFC;--muted:#93A4C4;
+    --blue:#4C8DFF;--blue-strong:#6BA0FF;--soft:#1A2B50;--line:#22335A;--rec:#FF6369;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1426;--surface:#111D36;--ink:#E7EEFC;--muted:#93A4C4;
+  --blue:#4C8DFF;--blue-strong:#6BA0FF;--soft:#1A2B50;--line:#22335A;--rec:#FF6369;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;min-height:100vh;display:flex;justify-content:center;padding:32px 20px}
+[hidden]{display:none!important}
+main{width:100%;max-width:520px;display:flex;flex-direction:column;gap:20px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+h1{font-size:1.5rem;font-weight:700;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:1.1rem;margin:0 0 8px}
+.sub{margin:0;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(15,37,71,.05)}
+.options{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.opt{display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.opt input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--blue);flex:none}
+.opt b{display:block;font-weight:600}
+.opt small{color:var(--muted)}
+details{margin-bottom:20px}
+summary{cursor:pointer;font-weight:600;color:var(--blue-strong)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media (max-width:460px){.grid{grid-template-columns:1fr}}
+.grid label{font-size:.9rem;color:var(--muted);font-weight:500}
+select,input[type=text]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);margin-top:4px}
+button,.btn{font:inherit;font-weight:600;border:0;border-radius:12px;padding:14px 20px;cursor:pointer;text-decoration:none;text-align:center;display:inline-block;transition:background .15s}
+.primary{background:var(--blue);color:#fff;font-size:1.05rem}
+.primary:hover{background:var(--blue-strong)}
+.wide{width:100%}
+.ghost{background:var(--soft);color:var(--blue-strong)}
+.ghost:hover{background:var(--line)}
+.sm{padding:8px 12px;font-size:.9rem;border-radius:10px}
+button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:12px}
+.row>*{flex:1}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.status{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--rec);animation:pulse 1.2s ease-in-out infinite}
+.paused .dot{animation:none;background:var(--muted)}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.time{font-size:2.75rem;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;line-height:1.2}
+.meta{text-align:center;color:var(--muted);margin:0 0 20px}
+.label{color:var(--muted);font-weight:500}
+.count{text-align:center}
+.big{font-size:5rem;font-weight:700;color:var(--blue);line-height:1.1;margin:8px 0 16px}
+video{width:100%;border-radius:12px;background:#000;margin-bottom:16px;max-height:60vh}
+.name{display:block;font-size:.9rem;color:var(--muted);font-weight:500;margin-bottom:16px}
+.note{margin:16px 0 0;color:var(--muted);font-size:.9rem}
+.toast{min-height:1.4em;margin:8px 0 0;text-align:center;color:var(--blue-strong);font-size:.9rem}
+.error{background:var(--soft);color:var(--ink);border-radius:12px;padding:12px 16px;margin-top:16px;font-size:.95rem}
+#list{list-style:none;margin:0;padding:0}
+#list li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}
+#list li:first-child{border-top:0}
+#list span{flex:1 1 200px;word-break:break-all;font-size:.95rem}
+.acts{display:flex;gap:8px}
+#sr{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.sr-time{font-size:2.25rem;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;color:var(--blue);margin-bottom:12px}
+#srList{list-style:none;margin:12px 0 0;padding:0;max-height:120px;overflow-y:auto;font-variant-numeric:tabular-nums;font-size:.95rem}
+#srList li{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-top:1px solid var(--line)}
+#srList li:first-child{border-top:0}
+input[type=file]{width:100%;margin-top:4px;font:inherit;color:var(--muted)}
+.tabs{display:flex;gap:4px;padding:4px;background:var(--soft);border-radius:12px;margin-bottom:20px}
+.tabs button{flex:1;padding:8px 6px;background:transparent;color:var(--muted);font-size:.9rem;border-radius:9px}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--blue-strong);box-shadow:0 1px 3px rgba(15,37,71,.15)}
+.panel{display:flex;flex-direction:column;gap:18px;margin-bottom:24px;min-height:260px}
+.vol{display:flex;align-items:center;gap:12px;margin:10px 0 0 32px}
+.vol input{flex:1;accent-color:var(--blue)}
+.vol output{width:3.2em;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.9rem}
+.field select{margin:10px 0 0 32px;width:calc(100% - 32px)}
+.tbl{display:grid;grid-template-columns:1fr 84px 84px;align-items:center;gap:12px 0}
+.tbl .h{text-align:center;color:var(--muted);font-size:.8rem}
+.tbl b{font-weight:600}
+.tbl small{display:block;color:var(--muted);font-weight:400}
+.tbl input{justify-self:center;width:20px;height:20px;accent-color:var(--blue)}
+.mix{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.mix label{display:grid;grid-template-columns:84px 1fr;gap:4px 12px;align-items:center;font-size:.9rem;color:var(--muted)}
+.mix input{accent-color:var(--blue);width:100%}
+.bar{grid-column:2;height:4px;background:var(--soft);border-radius:2px;overflow:hidden}
+.bar b{display:block;height:100%;width:0;background:var(--blue)}
+#cnt{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
+.cnt-name{color:var(--muted);font-size:.9rem}
+.cnt-row{display:flex;align-items:center;gap:12px}
+.cnt-row button{flex:1}
+.cnt-num{flex:1;font-size:2.25rem;font-weight:700;font-variant-numeric:tabular-nums}
+.gt{font-weight:600;margin-bottom:8px}
+</style>
+</head>
+<body>
+<main id="main">
+  <header class="top">
+    <div>
+      <h1>Grabador de pantalla</h1>
+      <p class="sub">Graba tu partida de Roblox y descarga el video.</p>
+    </div>
+    <button class="ghost sm" id="theme">Modo oscuro</button>
+  </header>
+
+  <section class="card" id="idle">
+    <div class="tabs" role="tablist">
+      <button data-tab="audio" aria-selected="true">Audio</button>
+      <button data-tab="video" aria-selected="false">Video</button>
+      <button data-tab="tools" aria-selected="false">Datos</button>
+      <button data-tab="mark" aria-selected="false">Marca</button>
+    </div>
+    <div class="panel" data-p="audio">
+      <div class="field">
+        <label class="opt"><input type="checkbox" id="sys" checked><span><b>Sonido del juego</b><small>Activa “compartir audio” al elegir la pantalla.</small></span></label>
+        <div class="vol"><input type="range" id="vGame" min="0" max="200" value="100" aria-label="Volumen del juego"><output id="oGame"></output></div>
+      </div>
+      <div class="field">
+        <label class="opt"><input type="checkbox" id="mic"><span><b>Micrófono</b><small>Para grabar tu voz.</small></span></label>
+        <select id="micDev" aria-label="Micrófono"><option value="">Micrófono predeterminado</option></select>
+        <div class="vol"><input type="range" id="vMic" min="0" max="200" value="100" aria-label="Volumen del micrófono"><output id="oMic"></output></div>
+      </div>
+    </div>
+    <div class="panel" data-p="video" hidden>
+      <div class="grid">
+        <label>Resolución<select id="res"><option value="0">Original</option><option value="720">720p</option><option value="1080" selected>1080p</option><option value="1440">1440p</option></select></label>
+        <label>Fotogramas<select id="fps"><option value="30" selected>30 por segundo</option><option value="60">60 por segundo</option></select></label>
+        <label>Calidad<select id="qual"><option value="low">Baja (archivo ligero)</option><option value="mid" selected>Media</option><option value="high">Alta (archivo pesado)</option></select></label>
+        <label>Formato<select id="fmt"><option value="auto">Automático</option><option value="webm">WebM</option><option value="mp4">MP4</option></select></label>
+        <label>Cuenta regresiva<select id="cd"><option value="0">Sin cuenta</option><option value="3" selected>3 segundos</option><option value="5">5 segundos</option><option value="10">10 segundos</option></select></label>
+      </div>
+    </div>
+    <div class="panel" data-p="tools" hidden>
+      <div class="tbl">
+        <span></span><span class="h">En pantalla</span><span class="h">En el video</span>
+        <b>FPS<small>Cuadros por segundo</small></b><input type="checkbox" id="fpsOn" aria-label="FPS en pantalla"><input type="checkbox" id="ovFps" aria-label="FPS en el video">
+        <b>Tiempo de grabación<small>Cronómetro normal</small></b><span></span><input type="checkbox" id="ovTime" aria-label="Tiempo en el video">
+        <b>Cronómetro de speedrun<small>Con vueltas</small></b><input type="checkbox" id="srOn" aria-label="Speedrun en pantalla"><input type="checkbox" id="ovSr" aria-label="Speedrun en el video">
+        <b>Contador<small>Intentos, caídas…</small></b><input type="checkbox" id="cntOn" aria-label="Contador en pantalla"><input type="checkbox" id="ovCnt" aria-label="Contador en el video">
+      </div>
+      <div class="grid">
+        <label>Nombre del contador<input type="text" id="cntLabel" maxlength="16" value="Intentos"></label>
+        <label>Posición de los datos<select id="hpos"><option value="tl">Arriba a la izquierda</option><option value="tr">Arriba a la derecha</option><option value="bl">Abajo a la izquierda</option><option value="br">Abajo a la derecha</option></select></label>
+      </div>
+      <p class="note" id="ovHelp" style="margin:0">Lo que marques en “En el video” se graba dentro del archivo final.</p>
+    </div>
+    <div class="panel" data-p="mark" hidden>
+      <label class="opt"><input type="checkbox" id="wmOn"><span><b>Marca de agua</b><small>Tu nombre o logo aparece dentro del video. Elige una esquina distinta a la de los datos.</small></span></label>
+      <div class="grid">
+        <label>Texto<input type="text" id="wmText" maxlength="40" placeholder="Tu nombre o canal"></label>
+        <label>Posición<select id="wmPos"><option value="br">Abajo a la derecha</option><option value="bl">Abajo a la izquierda</option><option value="tr">Arriba a la derecha</option><option value="tl">Arriba a la izquierda</option></select></label>
+        <label>Logo (opcional)<input type="file" id="wmLogo" accept="image/*"></label>
+      </div>
+    </div>
+    <button class="primary wide" id="start">Grabar pantalla</button>
+    <p class="note">El navegador te pedirá elegir qué compartir. Elige la ventana de Roblox o toda la pantalla.</p>
+    <p class="note" id="pipnote" hidden>Durante la grabación puedes abrir una ventana flotante con los controles sin salir del juego.</p>
+    <div class="error" id="err" hidden></div>
+  </section>
+
+  <section class="card count" id="count" hidden>
+    <div class="label">La grabación empieza en</div>
+    <div class="big" id="num">3</div>
+    <button class="ghost" id="cancel">Cancelar</button>
+  </section>
+
+  <section class="card" id="live" hidden>
+    <div class="status" id="status"><span class="dot"></span><span class="label" id="stateText">Grabando</span></div>
+    <div class="time" id="time">00:00</div>
+    <p class="meta" id="size">0 MB</p>
+    <p class="meta" id="fpsBox" style="margin-top:-12px" hidden></p>
+    <div class="row">
+      <button class="ghost" id="pause">Pausar</button>
+      <button class="primary" id="stop">Detener</button>
+    </div>
+    <div class="tools">
+      <button class="ghost sm" id="mutemic" hidden>Silenciar micrófono</button>
+      <button class="ghost sm" id="mutesys" hidden>Silenciar sonido del juego</button>
+      <button class="ghost sm" id="shot">Tomar captura</button>
+      <button class="ghost sm" id="float" hidden>Ventana flotante</button>
+    </div>
+    <div class="mix" id="mix">
+      <label id="chGame"><span>Juego</span><input type="range" id="gGame" min="0" max="200" value="100" aria-label="Volumen del juego"><i class="bar"><b id="lvGame"></b></i></label>
+      <label id="chMic"><span>Micrófono</span><input type="range" id="gMic" min="0" max="200" value="100" aria-label="Volumen del micrófono"><i class="bar"><b id="lvMic"></b></i></label>
+    </div>
+    <div id="sr" hidden>
+      <div class="sr-time" id="srTime">0:00.00</div>
+      <div class="row">
+        <button class="ghost sm" id="srGo">Iniciar</button>
+        <button class="ghost sm" id="srSplit">Vuelta</button>
+        <button class="ghost sm" id="srReset">Reiniciar</button>
+      </div>
+      <ul id="srList"></ul>
+    </div>
+    <div id="cnt" hidden>
+      <div class="cnt-name" id="cntName">Intentos</div>
+      <div class="cnt-row"><button class="ghost" id="cntMinus" aria-label="Restar uno">−1</button><div class="cnt-num" id="cntNum">0</div><button class="primary" id="cntPlus" aria-label="Sumar uno">+1</button></div>
+    </div>
+    <p class="toast" id="toast" role="status"></p>
+  </section>
+
+  <section class="card" id="done" hidden>
+    <video id="preview" controls playsinline></video>
+    <div id="graphBox" hidden><div class="gt">FPS durante la grabación</div><canvas id="graph" style="width:100%;height:110px"></canvas><p class="note" id="graphStat" style="margin:4px 0 16px"></p></div>
+    <label class="name">Nombre del archivo
+      <input type="text" id="fname" maxlength="80"></label>
+    <div class="row">
+      <a class="btn primary" id="download">Descargar video</a>
+      <button class="ghost" id="again">Grabar de nuevo</button>
+    </div>
+  </section>
+
+  <section class="card" id="history" hidden>
+    <div class="top"><h2>Tus grabaciones</h2><button class="ghost sm" id="clearAll">Borrar todo</button></div>
+    <p class="sub" id="histNote" style="font-size:.9rem;margin-bottom:8px"></p>
+    <ul id="list"></ul>
+  </section>
+</main>
+
+<script>
+const el = {};
+document.querySelectorAll("[id]").forEach(e => el[e.id] = e);
+const $ = id => el[id];
+const p = n => String(n).padStart(2, "0");
+const fmt = ms => { const s = Math.floor(ms/1000), h = Math.floor(s/3600); return (h ? p(h)+":" : "") + p(Math.floor(s%3600/60)) + ":" + p(s%60); };
+const mb = b => (b/1048576).toFixed(b < 1e7 ? 1 : 0) + " MB";
+const clean = t => t.replace(/[\\/:*?"<>|]/g, "").trim();
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+let rec, chunks = [], size = 0, streams = [], ctx, timer, cdTimer, elapsed = 0, last = 0;
+let mime = "", display, mic, pip = null, list = [], current = null, toastT;
+let fpsTrack = null, fpsFrames = 0, fpsSum = 0, fpsN = 0, fpsMin = Infinity, fpsT = 0;
+let srStart = 0, srAcc = 0, srRun = false, srSplits = [], srT;
+let wmGen = null, wmLogo = null, wmCfg = null, nameT, db = null;
+let cntVal = 0, fpsLast = 0, fpsHist = [], gGain = null, mGain = null, gAn = null, mAn = null, lvT;
+
+/* Tema */
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  $("theme").textContent = t === "dark" ? "Modo claro" : "Modo oscuro";
+  if (pip) pip.document.documentElement.dataset.theme = t;
+}
+applyTheme(store.get("gp-theme") || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"));
+$("theme").onclick = () => {
+  const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(t); store.set("gp-theme", t);
+};
+
+/* Formatos disponibles */
+const M = {
+  webm: ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"],
+  mp4: ["video/mp4;codecs=avc1,mp4a.40.2","video/mp4"]
+};
+const supported = t => window.MediaRecorder && MediaRecorder.isTypeSupported(t);
+const pick = f => (f === "auto" ? [...M.webm, ...M.mp4] : M[f]).find(supported) || "";
+[...$("fmt").options].forEach(o => { if (o.value !== "auto" && !pick(o.value)) o.disabled = true; });
+
+/* Recordar ajustes */
+["sys","mic","vGame","vMic","fpsOn","ovFps","ovTime","srOn","ovSr","cntOn","ovCnt","cntLabel","hpos","wmOn","wmText","wmPos","res","fps","qual","fmt","cd"].forEach(k => {
+  const e = $(k), v = store.get("gp-" + k), box = e.type === "checkbox";
+  if (v !== null) box ? e.checked = v === "1" : e.value = v;
+  e.onchange = () => store.set("gp-" + k, box ? (e.checked ? "1" : "0") : e.value);
+});
+if ($("fmt").selectedOptions[0].disabled) $("fmt").value = "auto";
+const wmOk = window.MediaStreamTrackProcessor && window.MediaStreamTrackGenerator && window.VideoFrame && window.OffscreenCanvas;
+if (!wmOk){ ["wmOn","ovFps","ovTime","ovSr","ovCnt"].forEach(k => { $(k).checked = false; $(k).disabled = true; }); $("ovHelp").textContent = "Los datos y la marca de agua dentro del video solo funcionan en Chrome y Edge."; }
+$("wmLogo").onchange = e => {
+  const file = e.target.files[0];
+  wmLogo = null;
+  if (file) createImageBitmap(file).then(b => wmLogo = b).catch(() => {});
+};
+
+function show(name){ ["idle","count","live","done"].forEach(n => $(n).hidden = n !== name); }
+function showError(t){ $("err").textContent = t; $("err").hidden = false; }
+function flash(t){ $("toast").textContent = t; clearTimeout(toastT); toastT = setTimeout(() => $("toast").textContent = "", 2500); }
+function cleanup(){
+  streams.forEach(s => s.getTracks().forEach(t => t.stop()));
+  streams = [];
+  if (ctx){ ctx.close().catch(() => {}); ctx = null; }
+  clearInterval(timer);
+  if (fpsTrack){ fpsTrack.stop(); fpsTrack = null; }
+  if (wmGen){ wmGen.stop(); wmGen = null; }
+  clearInterval(lvT);
+}
+
+if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
+  $("start").disabled = true;
+  showError("Este navegador no permite grabar la pantalla. Prueba con Chrome, Edge o Firefox en una computadora.");
+}
+if (window.documentPictureInPicture){ $("pipnote").hidden = false; $("float").hidden = false; }
+
+/* Iniciar */
+$("start").onclick = async () => {
+  $("err").hidden = true;
+  const res = +$("res").value, video = { frameRate: { ideal: +$("fps").value } };
+  if (res){ video.height = { ideal: res }; video.width = { ideal: Math.round(res*16/9) }; }
+  try{
+    display = await navigator.mediaDevices.getDisplayMedia({ video, audio: $("sys").checked });
+  }catch(e){
+    if (e && e.name === "NotAllowedError"){
+      showError("El navegador bloqueó la captura de pantalla. Si abriste esta página dentro de otra (como el chat), descarga el archivo y ábrelo directamente en Chrome o Edge. Si no, vuelve a intentarlo y elige una pantalla o ventana.");
+    } else {
+      showError("No se pudo iniciar la grabación: " + (e && e.name ? e.name : "error desconocido") + ".");
+    }
+    return;
+  }
+  mic = null; streams = [display];
+  if ($("mic").checked){
+    try{
+      mic = await navigator.mediaDevices.getUserMedia({ audio: $("micDev").value ? { deviceId: { exact: $("micDev").value } } : true });
+      streams.push(mic);
+    }catch(e){
+      showError("No se pudo usar el micrófono, se grabará sin él.");
+    }
+  }
+  let audio = [];
+  gGain = mGain = gAn = mAn = null;
+  const dTracks = display.getAudioTracks(), mTracks = mic ? mic.getAudioTracks() : [];
+  if (dTracks.length || mTracks.length){
+    ctx = new AudioContext(); ctx.resume();
+    const dest = ctx.createMediaStreamDestination();
+    const chan = (tracks, v) => {
+      const gn = ctx.createGain(), an = ctx.createAnalyser();
+      gn.gain.value = v / 100;
+      ctx.createMediaStreamSource(new MediaStream(tracks)).connect(gn);
+      gn.connect(an); gn.connect(dest);
+      return [gn, an];
+    };
+    if (dTracks.length) [gGain, gAn] = chan(dTracks, +$("vGame").value);
+    if (mTracks.length) [mGain, mAn] = chan(mTracks, +$("vMic").value);
+    audio = dest.stream.getAudioTracks();
+  }
+  mime = pick($("fmt").value);
+  const opts = { videoBitsPerSecond: { low:2500000, mid:6000000, high:12000000 }[$("qual").value], audioBitsPerSecond: 128000 };
+  if (mime) opts.mimeType = mime;
+  let vtrack = display.getVideoTracks()[0];
+  if (wmOk && ["wmOn","ovFps","ovTime","ovSr","ovCnt"].some(k => $(k).checked)){
+    wmCfg = { wm: $("wmOn").checked, text: $("wmText").value.trim(), pos: $("wmPos").value, logo: wmLogo,
+      fps: $("ovFps").checked, time: $("ovTime").checked, sr: $("ovSr").checked, cnt: $("ovCnt").checked,
+      cntLabel: $("cntLabel").value.trim() || "Contador", hpos: $("hpos").value };
+    vtrack = wmGen = watermark(vtrack);
+  }
+  rec = new MediaRecorder(new MediaStream([vtrack, ...audio]), opts);
+  display.getVideoTracks()[0].onended = () => {
+    if (rec.state !== "inactive") rec.stop();
+    else if (!$("count").hidden) cancelCount();
+  };
+  const n = +$("cd").value;
+  if (n > 0) countdown(n); else begin();
+};
+
+function countdown(n){
+  show("count"); $("num").textContent = n;
+  cdTimer = setInterval(() => {
+    n--;
+    if (n <= 0){ clearInterval(cdTimer); begin(); } else $("num").textContent = n;
+  }, 1000);
+}
+function cancelCount(){ clearInterval(cdTimer); cleanup(); show("idle"); }
+$("cancel").onclick = cancelCount;
+
+function begin(){
+  chunks = []; size = 0;
+  rec.ondataavailable = e => { if (e.data.size){ chunks.push(e.data); size += e.data.size; } };
+  rec.onstop = finish;
+  rec.start(1000);
+  elapsed = 0; last = Date.now();
+  setPaused(false);
+  $("mutemic").hidden = !(mic && mic.getAudioTracks().length);
+  $("mutesys").hidden = !display.getAudioTracks().length;
+  $("mutemic").dataset.off = $("mutesys").dataset.off = "0";
+  $("mutemic").textContent = "Silenciar micrófono";
+  $("mutesys").textContent = "Silenciar sonido del juego";
+  tick();
+  startExtras();
+  $("gGame").value = $("vGame").value; $("gMic").value = $("vMic").value;
+  $("chGame").hidden = !gGain; $("chMic").hidden = !mGain; $("mix").hidden = !gGain && !mGain;
+  lvT = setInterval(levels, 100);
+  timer = setInterval(tick, 250);
+  show("live");
+}
+
+function tick(){
+  const now = Date.now();
+  if (rec.state === "recording") elapsed += now - last;
+  last = now;
+  $("time").textContent = fmt(elapsed);
+  $("size").textContent = mb(size);
+  document.title = (rec.state === "paused" ? "⏸ " : "● ") + fmt(elapsed) + " · Grabador";
+  if (fpsTrack && performance.now() - fpsT >= 1500) fpsTick(performance.now());
+}
+
+function setPaused(x){
+  $("pause").textContent = x ? "Continuar" : "Pausar";
+  $("stateText").textContent = x ? "En pausa" : "Grabando";
+  $("status").classList.toggle("paused", x);
+}
+$("pause").onclick = () => {
+  if (rec.state === "recording"){ rec.pause(); setPaused(true); }
+  else if (rec.state === "paused"){ last = Date.now(); rec.resume(); setPaused(false); }
+};
+$("stop").onclick = () => { if (rec && rec.state !== "inactive") rec.stop(); };
+
+/* Silenciar */
+function toggleMute(btn, tracks, name){
+  const off = btn.dataset.off !== "1";
+  tracks.forEach(t => t.enabled = !off);
+  btn.dataset.off = off ? "1" : "0";
+  btn.textContent = (off ? "Activar " : "Silenciar ") + name;
+}
+$("mutemic").onclick = () => toggleMute($("mutemic"), mic.getAudioTracks(), "micrófono");
+$("mutesys").onclick = () => toggleMute($("mutesys"), display.getAudioTracks(), "sonido del juego");
+
+/* Captura de imagen */
+$("shot").onclick = async () => {
+  try{
+    const v = document.createElement("video");
+    v.muted = true; v.srcObject = new MediaStream(display.getVideoTracks());
+    await v.play();
+    await new Promise(r => v.requestVideoFrameCallback ? v.requestVideoFrameCallback(() => r()) : setTimeout(r, 300));
+    const c = document.createElement("canvas");
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext("2d").drawImage(v, 0, 0);
+    c.toBlob(b => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = "captura-" + defName().slice(7) + ".png";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      flash("Captura guardada.");
+    });
+  }catch(e){ flash("No se pudo tomar la captura."); }
+};
+
+/* Ventana flotante */
+$("float").onclick = async () => {
+  try{
+    pip = await documentPictureInPicture.requestWindow({ width: 380, height: 470 + ($("sr").hidden ? 0 : 240) + ($("cnt").hidden ? 0 : 90) });
+    const st = pip.document.createElement("style");
+    st.textContent = [...document.styleSheets].map(s => [...s.cssRules].map(r => r.cssText).join("")).join("");
+    pip.document.head.append(st);
+    pip.document.documentElement.dataset.theme = document.documentElement.dataset.theme;
+    pip.document.body.style.cssText = "padding:12px;display:block;min-height:0";
+    pip.document.body.append($("live"));
+    $("float").hidden = true;
+    pip.addEventListener("pagehide", () => {
+      $("main").insertBefore($("live"), $("done"));
+      pip = null; $("float").hidden = false;
+    });
+  }catch(e){ pip = null; flash("No se pudo abrir la ventana flotante."); }
+};
+
+/* Contador de FPS y cronómetro de speedrun */
+function fpsTick(n){
+  const f = Math.round(fpsFrames * 1000 / (n - fpsT));
+  fpsFrames = 0; fpsT = n;
+  if (rec.state !== "recording"){ $("fpsBox").textContent = "FPS en pausa"; return; }
+  fpsLast = f; fpsSum += f; fpsN++; fpsMin = Math.min(fpsMin, f); fpsHist.push(f);
+  $("fpsBox").textContent = f + " FPS · prom. " + Math.round(fpsSum / fpsN) + " · mín. " + fpsMin;
+}
+function startExtras(){
+  const meas = $("fpsOn").checked || $("ovFps").checked;
+  $("fpsBox").hidden = !$("fpsOn").checked;
+  fpsFrames = 0; fpsSum = 0; fpsN = 0; fpsMin = Infinity; fpsLast = 0; fpsHist = []; fpsT = performance.now();
+  if (meas){
+    if (window.MediaStreamTrackProcessor){
+      $("fpsBox").textContent = "Midiendo FPS…";
+      fpsTrack = display.getVideoTracks()[0].clone();
+      const rd = new MediaStreamTrackProcessor({ track: fpsTrack }).readable.getReader();
+      (async () => { try{ for(;;){ const r = await rd.read(); if (r.done) break; r.value.close(); fpsFrames++; const n = performance.now(); if (n - fpsT >= 1000) fpsTick(n); } }catch(e){} })();
+    } else $("fpsBox").textContent = "El contador de FPS solo funciona en Chrome o Edge.";
+  }
+  $("sr").hidden = !$("srOn").checked;
+  if ($("srOn").checked || $("ovSr").checked){ srReset(); srGo(); }
+  cntVal = 0; cntDraw();
+  $("cnt").hidden = !$("cntOn").checked;
+  $("cntName").textContent = $("cntLabel").value.trim() || "Contador";
+}
+const ft = ms => {
+  const c = p(Math.floor(ms/10) % 100), s = Math.floor(ms/1000), m = Math.floor(s/60) % 60, h = Math.floor(s/3600);
+  return (h ? h + ":" + p(m) : m) + ":" + p(s % 60) + "." + c;
+};
+const srNow = () => srAcc + (srRun ? performance.now() - srStart : 0);
+function srDraw(){ $("srTime").textContent = ft(srNow()); }
+function srGo(){
+  if (srRun){ srAcc += performance.now() - srStart; srRun = false; clearInterval(srT); $("srGo").textContent = "Continuar"; }
+  else { srStart = performance.now(); srRun = true; srT = setInterval(srDraw, 50); $("srGo").textContent = "Pausar"; }
+  srDraw();
+}
+function srStop(){ if (srRun) srGo(); }
+function srReset(){
+  clearInterval(srT); srRun = false; srAcc = 0; srSplits = [];
+  $("srList").textContent = ""; $("srGo").textContent = "Iniciar"; srDraw();
+}
+function srSplit(){
+  const t = srNow(); if (!t) return;
+  const prev = srSplits.length ? srSplits[srSplits.length - 1] : 0;
+  srSplits.push(t);
+  const li = document.createElement("li"), a = document.createElement("span"), b = document.createElement("span");
+  a.textContent = "Vuelta " + srSplits.length;
+  b.textContent = ft(t) + "  (+" + ft(t - prev) + ")";
+  li.append(a, b); $("srList").prepend(li);
+}
+$("srGo").onclick = srGo; $("srSplit").onclick = srSplit; $("srReset").onclick = srReset;
+
+/* Marca de agua (se dibuja sobre cada cuadro, incluso con la pestaña en segundo plano) */
+function watermark(track){
+  const oc = new OffscreenCanvas(2, 2), g = oc.getContext("2d");
+  const tf = new TransformStream({
+    transform(frame, ctrl){
+      if (oc.width !== frame.displayWidth || oc.height !== frame.displayHeight){
+        oc.width = frame.displayWidth; oc.height = frame.displayHeight;
+      }
+      g.drawImage(frame, 0, 0);
+      drawMark(g, oc.width, oc.height);
+      drawHud(g, oc.width, oc.height);
+      const out = new VideoFrame(oc, { timestamp: frame.timestamp });
+      frame.close();
+      ctrl.enqueue(out);
+    }
+  });
+  const gen = new MediaStreamTrackGenerator({ kind: "video" });
+  new MediaStreamTrackProcessor({ track }).readable.pipeThrough(tf).pipeTo(gen.writable).catch(() => {});
+  return gen;
+}
+function drawMark(g, w, h){
+  const c = wmCfg;
+  if (!c.wm || !(c.text || c.logo)) return;
+  const s = Math.round(h * 0.04), pad = Math.round(h * 0.025);
+  g.font = "600 " + s + "px system-ui, sans-serif";
+  g.textBaseline = "middle";
+  const tw = c.text ? g.measureText(c.text).width : 0;
+  const lh = c.logo ? Math.round(h * 0.06) : 0, lw = c.logo ? Math.round(lh * c.logo.width / c.logo.height) : 0;
+  const gap = lh && c.text ? pad / 2 : 0, bw = lw + gap + tw, bh = Math.max(lh, s);
+  const x = c.pos.includes("r") ? w - pad - bw : pad, y = c.pos.includes("b") ? h - pad - bh : pad;
+  g.globalAlpha = 0.7;
+  if (lh) g.drawImage(c.logo, x, y + (bh - lh) / 2, lw, lh);
+  if (c.text){
+    g.fillStyle = "#fff"; g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = s / 4;
+    g.fillText(c.text, x + lw + gap, y + bh / 2);
+  }
+  g.globalAlpha = 1; g.shadowBlur = 0;
+}
+
+/* Historial guardado en el navegador (IndexedDB) */
+const idb = (mode, fn) => new Promise((res, rej) => {
+  const t = db.transaction("rec", mode), r = fn(t.objectStore("rec"));
+  t.oncomplete = () => res(r && r.result);
+  t.onerror = t.onabort = () => rej(t.error);
+});
+function openDb(){
+  return new Promise(res => {
+    try{
+      const q = indexedDB.open("grabador", 1);
+      q.onupgradeneeded = () => q.result.createObjectStore("rec", { keyPath: "id" });
+      q.onsuccess = () => { db = q.result; res(true); };
+      q.onerror = () => res(false);
+    }catch(e){ res(false); }
+  });
+}
+async function saveItem(it){
+  if (!db) return false;
+  try{
+    await idb("readwrite", s => s.put({ id: it.id, name: it.name, ext: it.ext, dur: it.dur, size: it.size, blob: it.blob, fps: it.fps }));
+    return true;
+  }catch(e){ return false; }
+}
+$("clearAll").onclick = () => {
+  if (!confirm("¿Borrar todas las grabaciones guardadas?")) return;
+  list.forEach(it => URL.revokeObjectURL(it.url));
+  list = [];
+  if (db) idb("readwrite", s => s.clear()).catch(() => {});
+  if (!$("done").hidden){ $("preview").removeAttribute("src"); show("idle"); }
+  renderList();
+};
+(async () => {
+  if (!(await openDb())) return;
+  try{
+    const all = await idb("readonly", s => s.getAll());
+    list = all.sort((a, b) => b.id - a.id).map(r => ({ ...r, url: URL.createObjectURL(r.blob) }));
+    renderList();
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  }catch(e){}
+})();
+
+/* Interfaz: pestañas, volumen, contador, gráfica, datos dentro del video */
+document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("[data-p]").forEach(pn => pn.hidden = pn.dataset.p !== b.dataset.tab);
+});
+[["vGame","oGame"], ["vMic","oMic"]].forEach(([a, o]) => {
+  const u = () => $(o).textContent = $(a).value + "%";
+  $(a).addEventListener("input", u); u();
+});
+$("gGame").oninput = () => { if (gGain) gGain.gain.value = $("gGame").value / 100; };
+$("gMic").oninput = () => { if (mGain) mGain.gain.value = $("gMic").value / 100; };
+async function loadMics(){
+  try{
+    (await navigator.mediaDevices.getUserMedia({ audio: true })).getTracks().forEach(t => t.stop());
+    const sel = $("micDev"), cur = sel.value;
+    sel.length = 1;
+    (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "audioinput")
+      .forEach(d => sel.add(new Option(d.label || "Micrófono", d.deviceId)));
+    sel.value = cur;
+  }catch(e){}
+}
+$("mic").addEventListener("change", () => { if ($("mic").checked) loadMics(); });
+function lv(an){
+  const d = new Uint8Array(an.fftSize); an.getByteTimeDomainData(d);
+  let m = 0; for (const v of d) m = Math.max(m, Math.abs(v - 128));
+  return Math.min(100, m / 128 * 130) + "%";
+}
+function levels(){ if (gAn) $("lvGame").style.width = lv(gAn); if (mAn) $("lvMic").style.width = lv(mAn); }
+const cntDraw = () => { $("cntNum").textContent = cntVal; };
+$("cntPlus").onclick = () => { cntVal++; cntDraw(); };
+$("cntMinus").onclick = () => { cntVal = Math.max(0, cntVal - 1); cntDraw(); };
+const recMs = () => elapsed + (rec && rec.state === "recording" ? Date.now() - last : 0);
+function drawHud(g, w, h){
+  const c = wmCfg, lines = [];
+  if (c.fps) lines.push(fpsLast + " FPS");
+  if (c.time) lines.push(fmt(recMs()));
+  if (c.sr) lines.push("SR " + ft(srNow()));
+  if (c.cnt) lines.push(c.cntLabel + ": " + cntVal);
+  if (!lines.length) return;
+  const sz = Math.round(h * 0.035), pad = Math.round(h * 0.015), lh = Math.round(sz * 1.35), m = Math.round(h * 0.025);
+  g.font = "600 " + sz + "px ui-monospace, Menlo, Consolas, monospace"; g.textBaseline = "top";
+  const bw = Math.max(...lines.map(l => g.measureText(l).width)) + pad * 2, bh = (lines.length - 1) * lh + sz + pad * 2;
+  const x = c.hpos.includes("r") ? w - m - bw : m, y = c.hpos.includes("b") ? h - m - bh : m;
+  g.fillStyle = "rgba(8,18,40,.65)"; g.beginPath(); g.roundRect(x, y, bw, bh, pad); g.fill();
+  g.fillStyle = "#fff"; lines.forEach((l, i) => g.fillText(l, x + pad, y + pad + i * lh));
+}
+function drawGraph(a){
+  const box = $("graphBox"); box.hidden = !(a && a.length > 2);
+  if (box.hidden) return;
+  const c = $("graph"), r = devicePixelRatio || 1, w = c.clientWidth, h = 110;
+  c.width = w * r; c.height = h * r;
+  const g = c.getContext("2d"), st = getComputedStyle(document.documentElement), max = Math.max(60, ...a);
+  g.scale(r, r);
+  g.strokeStyle = st.getPropertyValue("--line"); g.lineWidth = 1;
+  [0, .5, 1].forEach(k => { const y = h - 8 - k * (h - 16); g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); });
+  g.strokeStyle = st.getPropertyValue("--blue"); g.lineWidth = 2; g.beginPath();
+  a.forEach((v, i) => { const x = i / (a.length - 1) * w, y = h - 8 - v / max * (h - 16); i ? g.lineTo(x, y) : g.moveTo(x, y); });
+  g.stroke();
+  $("graphStat").textContent = "Promedio " + Math.round(a.reduce((x, y) => x + y, 0) / a.length) + " · mínimo " + Math.min(...a) + " · máximo " + Math.max(...a) + " FPS";
+}
+
+/* Terminar */
+function defName(){
+  const d = new Date();
+  return `roblox-${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}-${p(d.getHours())}-${p(d.getMinutes())}`;
+}
+function finish(){
+  cleanup();
+  document.title = "Grabador de pantalla";
+  srStop();
+  if (pip) pip.close();
+  const type = (mime || "video/webm").split(";")[0];
+  const blob = new Blob(chunks, { type });
+  current = { id: Date.now(), name: defName(), ext: type.includes("mp4") ? "mp4" : "webm", blob, url: URL.createObjectURL(blob), dur: elapsed, size: blob.size, fps: fpsHist.slice() };
+  list.unshift(current);
+  open(current);
+  renderList();
+  const it = current;
+  saveItem(it).then(ok => { if (!ok){ it.unsaved = true; renderList(); } });
+}
+function open(it){
+  current = it;
+  $("preview").src = it.url;
+  $("fname").value = it.name;
+  setDl();
+  show("done");
+  drawGraph(it.fps);
+}
+function setDl(){
+  $("download").href = current.url;
+  $("download").download = current.name + "." + current.ext;
+}
+$("fname").oninput = () => {
+  current.name = clean($("fname").value) || "grabacion";
+  setDl(); renderList();
+  clearTimeout(nameT); nameT = setTimeout(() => saveItem(current), 600);
+};
+$("again").onclick = () => { $("preview").pause(); show("idle"); };
+
+function renderList(){
+  $("list").textContent = "";
+  $("history").hidden = !list.length;
+  const tot = list.reduce((a, x) => a + x.size, 0);
+  $("histNote").textContent = list.length + (list.length === 1 ? " grabación · " : " grabaciones · ") + mb(tot) +
+    ". Se guardan en este navegador hasta que las borres." +
+    (list.some(x => x.unsaved) ? " Alguna no se pudo guardar aquí: descárgala." : "");
+  list.forEach(it => {
+    const li = document.createElement("li"), info = document.createElement("span"), acts = document.createElement("div");
+    info.textContent = `${it.name}.${it.ext} · ${fmt(it.dur)} · ${mb(it.size)}`;
+    acts.className = "acts";
+    const view = document.createElement("button");
+    view.className = "ghost sm"; view.textContent = "Ver"; view.onclick = () => open(it);
+    const dl = document.createElement("a");
+    dl.className = "btn ghost sm"; dl.textContent = "Descargar"; dl.href = it.url; dl.download = it.name + "." + it.ext;
+    const del = document.createElement("button");
+    del.className = "ghost sm"; del.textContent = "Borrar";
+    del.onclick = () => {
+      URL.revokeObjectURL(it.url);
+      if (db) idb("readwrite", s => s.delete(it.id)).catch(() => {});
+      list = list.filter(x => x !== it);
+      if (current === it && !$("done").hidden){ $("preview").removeAttribute("src"); show("idle"); }
+      renderList();
+    };
+    acts.append(view, dl, del);
+    li.append(info, acts);
+    $("list").append(li);
+  });
+}
+
+window.addEventListener("beforeunload", e => {
+  if ((rec && rec.state !== "inactive") || list.some(x => x.unsaved)){ e.preventDefault(); e.returnValue = ""; }
+});
+</script>
+</body>
+</html>
