@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="Lumo Studio: crea, edita y publica páginas web con IA. Editor, herramientas creativas y gestión de proyectos en un solo archivo.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Lumo Studio · Desarrollo web con IA</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2360a5fa'/%3E%3Cstop offset='1' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Cpath d='M26 22 16 32l10 10M38 22l10 10-10 10' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="manifest" id="manifestLink">
+<style>
+:root{
+  --bg:#f0f4fa;--card:rgba(255,255,255,.88);--solid:#fff;--ink:#0b1226;--muted:#5a6a85;--line:#dbe3f0;
+  --blue:#2563eb;--blue2:#60a5fa;--soft:#e8f0ff;--danger:#e11d48;--ok:#059669;--warn:#d97706;
+  --r:16px;--side:260px;--shadow:0 8px 30px rgba(15,23,42,.06);
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+html[data-theme=dark]{
+  --bg:#070b16;--card:rgba(15,22,40,.88);--solid:#0f1628;--ink:#e8eefc;--muted:#8a9bb8;--line:#1c2740;
+  --soft:#121c33;--shadow:0 8px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(700px 480px at 92% -8%,rgba(96,165,250,.22),transparent),
+             radial-gradient(560px 440px at -8% 108%,rgba(37,99,235,.14),transparent)}
+.ic{width:18px;height:18px;flex:none}
+button,input,select,textarea{font:inherit}
+
+/* ===== Layout con sidebar ===== */
+#app{display:flex;height:100dvh;overflow:hidden}
+.sidebar{
+  width:var(--side);flex:none;background:var(--solid);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;padding:14px 12px;gap:6px;z-index:20;
+  transition:transform .28s var(--ease),width .28s var(--ease);
+}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px;font-weight:800;font-size:19px;letter-spacing:-.03em}
+.sidebar .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0;margin-top:-1px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;border:0;
+  background:transparent;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;text-align:left;
+  transition:.18s var(--ease);width:100%;
+}
+.nav-item:hover{background:var(--soft);color:var(--ink)}
+.nav-item.on{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;box-shadow:0 6px 18px rgba(37,99,235,.28)}
+.nav-item .badge{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px}
+.side-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.main-wrap{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--card);backdrop-filter:blur(12px);gap:10px}
+.topbar .left{display:flex;align-items:center;gap:10px}
+.topbar h1{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.icon-btn{border:1px solid var(--line);background:var(--solid);color:var(--ink);width:40px;height:40px;border-radius:12px;cursor:pointer;display:grid;place-items:center;transition:.15s}
+.icon-btn:hover{border-color:var(--blue);color:var(--blue)}
+.content{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px}
+
+/* Mobile sidebar */
+.side-overlay{display:none;position:fixed;inset:0;background:rgba(5,10,25,.5);z-index:19;backdrop-filter:blur(3px)}
+.side-overlay.on{display:block}
+@media(max-width:900px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);box-shadow:20px 0 40px rgba(0,0,0,.2)}
+  .sidebar.open{transform:translateX(0)}
+  .side-overlay.on{display:block}
+}
+
+/* Cards & common */
+.card{background:var(--card);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+label.t{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:7px}
+textarea,input,select{width:100%;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;outline:none;transition:.15s}
+textarea:focus,input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+textarea{resize:vertical;min-height:100px;line-height:1.5}
+.ta{position:relative}
+.ta textarea{padding-right:46px}
+.mic{position:absolute;right:7px;bottom:7px;width:34px;height:34px;border-radius:50%;border:0;background:var(--soft);color:var(--blue);cursor:pointer;display:grid;place-items:center}
+.mic.on{background:var(--danger);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(225,29,72,.15)}}
+.scroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--solid);color:var(--ink);border-radius:99px;padding:7px 12px;font-size:13px;cursor:pointer;white-space:nowrap;transition:.15s}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.btn{border:0;border-radius:12px;padding:11px 15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s;color:inherit;font-size:14px}
+.primary{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;box-shadow:0 6px 18px rgba(37,99,235,.28)}
+.primary:active{transform:scale(.98)}
+.primary:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.danger{background:var(--danger);color:#fff}
+.ghost{background:var(--solid);border:1px solid var(--line)}
+.ghost:hover{border-color:var(--blue);color:var(--blue)}
+.ghost:disabled{opacity:.4;pointer-events:none}
+.ok{background:var(--ok);color:#fff}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.55}
+.hint a{color:var(--blue)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+
+/* Dashboard */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:var(--solid);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.stat b{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.stat span{font-size:12px;color:var(--muted);font-weight:600}
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.quick button{padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--solid);cursor:pointer;text-align:left;transition:.18s;display:flex;flex-direction:column;gap:6px}
+.quick button:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
+.quick button strong{font-size:14px}
+.quick button small{color:var(--muted);font-size:12px}
+
+/* Create + Preview layout */
+.create-layout{display:grid;gap:14px;grid-template-columns:1fr;flex:1;min-height:0}
+@media(min-width:1000px){
+  .create-layout{grid-template-columns:380px 1fr;height:100%}
+  .create-layout > .card{min-height:0}
+}
+.out{display:flex;flex-direction:column;min-height:0;flex:1}
+.status{display:flex;flex-direction:column;gap:6px}
+.pbar{height:6px;border-radius:99px;background:var(--soft);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--blue2),var(--blue));transition:width .25s ease}
+.pbar.busy i{background-size:200% 100%;background-image:linear-gradient(90deg,var(--blue2),var(--blue),var(--blue2));animation:flow 1.2s linear infinite}
+@keyframes flow{to{background-position:-200% 0}}
+#status{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+#status b{color:var(--ink);font-weight:700}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tabs{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px}
+.tab{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer}
+.tab.on{background:var(--solid);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.tools{display:flex;gap:5px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.tbtn{border:1px solid var(--line);background:var(--solid);color:var(--ink);height:36px;min-width:36px;padding:0 9px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:.15s}
+.tbtn:hover{border-color:var(--blue);color:var(--blue)}
+.tbtn.on{background:var(--soft);border-color:var(--blue);color:var(--blue)}
+.tbtn span{display:none}
+@media(min-width:700px){.tbtn span{display:inline}}
+.sep{width:1px;height:20px;background:var(--line)}
+.stage{position:relative;flex:1;min-height:320px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:
+  repeating-conic-gradient(var(--soft) 0 25%,transparent 0 50%) 0 0/18px 18px}
+#frameWrap{height:100%;width:100%;margin:0 auto;transition:width .3s var(--ease);background:#fff}
+.phone #frameWrap{width:390px;max-width:100%;border-left:1px solid var(--line);border-right:1px solid var(--line);box-shadow:0 0 40px rgba(0,0,0,.1)}
+.tablet #frameWrap{width:768px;max-width:100%;border-left:1px solid var(--line);border-right:1px solid var(--line);box-shadow:0 0 40px rgba(0,0,0,.08)}
+iframe{width:100%;height:100%;border:0;background:#fff;display:block}
+pre#codeView{position:absolute;inset:0;overflow:auto;padding:12px;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0b1220;color:#d6e2ff;white-space:pre-wrap;word-break:break-word;display:none;margin:0}
+.editor-area{position:absolute;inset:0;display:none;flex-direction:column;background:#0b1220}
+.editor-area.on{display:flex}
+.editor-toolbar{display:flex;gap:6px;padding:8px;background:#121a2e;border-bottom:1px solid #1f2b47;flex-wrap:wrap;align-items:center}
+.editor-toolbar input{background:#0b1220;border-color:#1f2b47;color:#d6e2ff;font-size:13px;padding:7px 10px;max-width:180px}
+.editor-toolbar .tbtn{background:#1a2438;border-color:#2a3650;color:#c8d4f0}
+#codeEdit{flex:1;width:100%;border:0;border-radius:0;background:#0b1220;color:#d6e2ff;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:12px;resize:none;outline:none}
+.line-count{font-size:11px;color:#6b7a99;padding:4px 10px;background:#121a2e;border-top:1px solid #1f2b47}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px;background:var(--solid)}
+.empty b{display:block;color:var(--ink);font-size:16px;margin:8px 0 4px}
+.logo-big{width:56px;height:56px;filter:drop-shadow(0 8px 16px rgba(37,99,235,.3))}
+
+/* Projects */
+.proj-list{display:flex;flex-direction:column;gap:8px}
+.proj-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--solid);border-radius:13px;padding:12px;transition:.15s}
+.proj-item:hover{border-color:var(--blue)}
+.proj-item .tx{flex:1;min-width:0}
+.proj-item .tx b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-item .tx small{color:var(--muted);font-size:12px}
+.proj-item .fav{color:var(--warn);font-size:16px;cursor:pointer}
+
+/* Tools */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.tool-card{border:1px solid var(--line);background:var(--solid);border-radius:14px;padding:16px;cursor:pointer;transition:.18s;display:flex;flex-direction:column;gap:8px}
+.tool-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
+.tool-card .ico{font-size:28px}
+.tool-card strong{font-size:14px}
+.tool-card small{color:var(--muted);font-size:12px;line-height:1.4}
+.tool-panel{display:none}
+.tool-panel.on{display:flex;flex-direction:column;gap:12px}
+.color-swatch{width:100%;height:48px;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+.palette{display:flex;gap:6px;flex-wrap:wrap}
+.palette span{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+
+/* Toasts & sheets */
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.sheet{position:fixed;inset:0;background:rgba(5,10,25,.55);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.sheet.on{display:flex}
+.sheet-in{width:100%;max-width:520px;max-height:90dvh;overflow:auto;background:var(--solid);border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;animation:up .28s var(--ease)}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+@media(min-width:700px){.sheet{align-items:center}.sheet-in{border-radius:20px}}
+.sheet h3{font-size:18px;letter-spacing:-.02em;display:flex;justify-content:space-between;align-items:center}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer}
+.seg button.on{background:var(--solid);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.keyrow{display:flex;gap:8px}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--bg);border-radius:13px;padding:11px 12px}
+.item .tx{flex:1;min-width:0}
+.item .tx b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .tx small{color:var(--muted);font-size:12px}
+.shareb{justify-content:flex-start;text-align:left;width:100%;font-weight:600;padding:12px 13px}
+.warn{background:var(--soft);border:1px dashed var(--blue);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5}
+.full{position:fixed;inset:0;z-index:60;background:#fff;display:none;flex-direction:column}
+.full.on{display:flex}
+.full .tbtn{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+#viewer{position:fixed;inset:0;z-index:70;background:#fff;display:flex;flex-direction:column}
+.vbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top));background:var(--solid);border-bottom:1px solid var(--line);color:var(--ink)}
+.vbar .brand{font-size:16px;display:flex;align-items:center;gap:8px;font-weight:700}
+#viewer iframe{flex:1}
+.confirm-box{background:var(--solid);border:1px solid var(--line);border-radius:16px;padding:18px;max-width:360px;margin:auto;display:flex;flex-direction:column;gap:12px;text-align:center}
+.bnav{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));display:none;gap:4px;background:var(--solid);border:1px solid var(--line);border-radius:18px;padding:4px;box-shadow:0 10px 28px rgba(15,23,42,.16);z-index:15}
+.bnav button{flex:1;border:0;background:transparent;color:var(--muted);padding:10px 4px;border-radius:14px;font-weight:700;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.bnav button.on{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff}
+.bnav .dot{position:absolute;top:6px;right:18%;width:7px;height:7px;border-radius:50%;background:var(--danger);display:none}
+@media(max-width:900px){.bnav{display:flex}}
+.fade-in{animation:fadeIn .35s var(--ease)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body data-section="dashboard">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs>
+</svg>
+
+<div class="side-overlay" id="sideOverlay"></div>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="18" fill="url(#lg)"/>
+        <path d="M26 22 16 32l10 10M38 22l10 10-10 10" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>Lumo<small>Studio · IA</small></div>
+    </div>
+    <button class="nav-item on" data-sec="dashboard"><i data-ic="home"></i> Dashboard</button>
+    <button class="nav-item" data-sec="create"><i data-ic="spark"></i> Crear</button>
+    <button class="nav-item" data-sec="projects"><i data-ic="folder"></i> Proyectos <span class="badge" id="projBadge" hidden>0</span></button>
+    <button class="nav-item" data-sec="tools"><i data-ic="wrench"></i> Herramientas</button>
+    <button class="nav-item" data-sec="help"><i data-ic="help"></i> Ayuda / Publicar</button>
+    <div class="side-foot">
+      <button class="nav-item" id="btnThemeSide" data-ic="moon"><i data-ic="moon"></i> Tema</button>
+      <button class="nav-item" id="btnSet" data-ic="key"><i data-ic="key"></i> API & Ajustes</button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="left">
+        <button class="icon-btn" id="btnMenu" data-ic="menu" aria-label="Menú" style="display:none"></button>
+        <h1 id="pageTitle">Dashboard</h1>
+      </div>
+      <div class="row" style="gap:6px">
+        <button class="icon-btn" id="btnHist" data-ic="history" aria-label="Historial rápido"></button>
+        <button class="icon-btn" id="btnTheme" data-ic="moon" aria-label="Cambiar tema"></button>
+      </div>
+    </header>
+
+    <div class="content" id="content">
+
+      <!-- DASHBOARD -->
+      <section id="sec-dashboard" class="fade-in">
+        <div class="stats" id="dashStats">
+          <div class="stat"><b id="stProjects">0</b><span>Proyectos</span></div>
+          <div class="stat"><b id="stGens">0</b><span>Generaciones</span></div>
+          <div class="stat"><b id="stFavs">0</b><span>Favoritos</span></div>
+          <div class="stat"><b id="stSize">0</b><span>KB guardados</span></div>
+        </div>
+        <div class="card">
+          <label class="t">Accesos rápidos</label>
+          <div class="quick">
+            <button data-go="create"><strong>✨ Nueva página</strong><small>Describe y genera con IA</small></button>
+            <button data-go="projects"><strong>📁 Mis proyectos</strong><small>Continuar donde lo dejaste</small></button>
+            <button data-go="tools"><strong>🛠️ Herramientas</strong><small>TTS, colores, sonidos…</small></button>
+            <button id="quickImprove"><strong>🔧 Mejorar código</strong><small>Pide mejoras a la IA</small></button>
+          </div>
+        </div>
+        <div class="card">
+          <label class="t">Últimos proyectos</label>
+          <div class="proj-list" id="dashRecent"></div>
+        </div>
+      </section>
+
+      <!-- CREATE -->
+      <section id="sec-create" hidden>
+        <div class="create-layout">
+          <div class="card" id="paneCreate" style="overflow:auto">
+            <div>
+              <label class="t">Tipo de proyecto</label>
+              <div class="scroll" id="projTypes"></div>
+            </div>
+            <div>
+              <label class="t">Plantillas</label>
+              <div class="scroll" id="tpls"></div>
+            </div>
+            <div>
+              <label class="t">Estilo visual</label>
+              <div class="scroll" id="styles"></div>
+            </div>
+            <div>
+              <label class="t" for="prompt">Tu idea / cambio</label>
+              <div class="ta">
+                <textarea id="prompt" placeholder="Ej: Una landing para una cafetería con menú, horarios y botón de WhatsApp…"></textarea>
+                <button class="mic" id="mic" data-ic="mic" aria-label="Dictar"></button>
+              </div>
+            </div>
+            <div class="row">
+              <button class="btn primary grow" id="gen"><i data-ic="spark"></i><span id="genTxt">Generar</span></button>
+              <button class="btn danger" id="stop" hidden><i data-ic="stop"></i>Detener</button>
+            </div>
+            <div class="row">
+              <button class="btn ghost grow" id="undo" disabled><i data-ic="undo"></i>Deshacer</button>
+              <button class="btn ghost grow" id="improveBtn"><i data-ic="wand"></i>Mejorar</button>
+              <button class="btn ghost grow" id="fixBtn"><i data-ic="check"></i>Corregir</button>
+            </div>
+            <div class="row">
+              <button class="btn ghost grow" id="newBtn"><i data-ic="plus"></i>Nueva</button>
+              <button class="btn ghost grow" id="saveProjBtn"><i data-ic="save"></i>Guardar</button>
+            </div>
+            <p class="hint" id="hintEdit">Tip: después de generar, escribe un cambio y se edita la misma página. <b>Ctrl + Enter</b> genera. Usa «Mejorar» o «Corregir» para pedir a la IA que refine el código actual.</p>
+          </div>
+
+          <div class="card out" id="paneOut">
+            <div class="status">
+              <div class="pbar" id="pbar"><i id="pfill"></i></div>
+              <div id="status"><span>Tu página aparecerá aquí</span><span></span></div>
+            </div>
+            <div class="bar">
+              <div class="tabs">
+                <button class="tab on" data-t="preview">Vista previa</button>
+                <button class="tab" data-t="code">Código</button>
+                <button class="tab" data-t="edit">Editar</button>
+              </div>
+              <div class="tools">
+                <button class="tbtn on" id="devPc" data-ic="monitor" aria-label="PC"></button>
+                <button class="tbtn" id="devTablet" data-ic="tablet" aria-label="Tablet"></button>
+                <button class="tbtn" id="devPhone" data-ic="phone" aria-label="Móvil"></button>
+                <span class="sep"></span>
+                <button class="tbtn" id="copy" data-ic="copy" aria-label="Copiar"><span>Copiar</span></button>
+                <button class="tbtn" id="download" data-ic="download" aria-label="Descargar"><span>Bajar</span></button>
+                <button class="tbtn" id="share" data-ic="share" aria-label="Compartir"><span>Compartir</span></button>
+                <button class="tbtn" id="fs" data-ic="expand" aria-label="Pantalla completa"></button>
+                <button class="tbtn" id="openTab" data-ic="globe" aria-label="Abrir pestaña"></button>
+              </div>
+            </div>
+            <div class="stage" id="stage">
+              <div id="frameWrap"><iframe id="frame" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe></div>
+              <pre id="codeView"></pre>
+              <div class="editor-area" id="editorArea">
+                <div class="editor-toolbar">
+                  <input id="searchIn" placeholder="Buscar…">
+                  <input id="replaceIn" placeholder="Reemplazar…">
+                  <button class="tbtn" id="doReplace">Reemplazar</button>
+                  <button class="tbtn" id="doReplaceAll">Todo</button>
+                  <button class="tbtn primary" id="applyEdit" style="margin-left:auto">Aplicar cambios</button>
+                </div>
+                <textarea id="codeEdit" spellcheck="false"></textarea>
+                <div class="line-count" id="lineCount">0 líneas · 0 caracteres</div>
+              </div>
+              <div class="empty" id="empty">
+                <div>
+                  <svg class="logo-big" viewBox="0 0 64 64" aria-hidden="true">
+                    <rect width="64" height="64" rx="18" fill="url(#lg)"/>
+                    <path d="M26 22 16 32l10 10M38 22l10 10-10 10" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <b>Tu página aparecerá aquí</b>
+                  <span>Elige una plantilla o cuéntame tu idea</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROJECTS -->
+      <section id="sec-projects" hidden>
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <label class="t" style="margin:0">Mis proyectos</label>
+            <div class="row">
+              <button class="btn ghost" id="importProj"><i data-ic="upload"></i> Importar</button>
+              <button class="btn primary" id="newProjBtn"><i data-ic="plus"></i> Nuevo</button>
+            </div>
+          </div>
+          <input type="file" id="importFile" accept=".json,.html" hidden>
+          <div class="proj-list" id="projList"></div>
+          <p class="hint" id="projEmpty" hidden>Aún no tienes proyectos guardados. Crea uno desde la sección Crear y pulsa «Guardar».</p>
+        </div>
+      </section>
+
+      <!-- TOOLS -->
+      <section id="sec-tools" hidden>
+        <div class="tools-grid" id="toolsGrid">
+          <div class="tool-card" data-tool="tts"><div class="ico">🗣️</div><strong>Texto a voz</strong><small>Escucha textos con voces del navegador</small></div>
+          <div class="tool-card" data-tool="sound"><div class="ico">🔊</div><strong>Laboratorio de sonidos</strong><small>Genera tonos y efectos con Web Audio</small></div>
+          <div class="tool-card" data-tool="colors"><div class="ico">🎨</div><strong>Paleta de colores</strong><small>Genera paletas armónicas</small></div>
+          <div class="tool-card" data-tool="names"><div class="ico">✨</div><strong>Nombres de proyecto</strong><small>Ideas de nombres creativos</small></div>
+          <div class="tool-card" data-tool="ideas"><div class="ico">💡</div><strong>Ideas de proyectos</strong><small>Inspiración para webs y apps</small></div>
+          <div class="tool-card" data-tool="video"><div class="ico">🎬</div><strong>Prompts de vídeo</strong><small>Plantillas para IA de vídeo</small></div>
+          <div class="tool-card" data-tool="format"><div class="ico">📐</div><strong>Formatear / Minificar</strong><small>Limpia o comprime HTML/CSS/JS</small></div>
+          <div class="tool-card" data-tool="seo"><div class="ico">🔍</div><strong>Metadatos SEO</strong><small>Genera title, description y OG</small></div>
+          <div class="tool-card" data-tool="counter"><div class="ico">📊</div><strong>Contador</strong><small>Caracteres, palabras y líneas</small></div>
+          <div class="tool-card" data-tool="favicon"><div class="ico">🔲</div><strong>Favicon SVG</strong><small>Genera un favicon simple</small></div>
+        </div>
+
+        <!-- Tool panels -->
+        <div class="card tool-panel" id="tool-tts">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Texto a voz</label><button class="tbtn" data-back>← Volver</button></div>
+          <textarea id="ttsText" placeholder="Escribe o pega el texto a leer…"></textarea>
+          <div class="grid2">
+            <div><label class="t">Voz</label><select id="ttsVoice"></select></div>
+            <div><label class="t">Velocidad</label><input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1"></div>
+          </div>
+          <div class="grid2">
+            <div><label class="t">Tono</label><input type="range" id="ttsPitch" min="0.5" max="2" step="0.1" value="1"></div>
+            <div style="display:flex;align-items:flex-end;gap:8px">
+              <button class="btn primary grow" id="ttsPlay">Reproducir</button>
+              <button class="btn ghost" id="ttsStop">Detener</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card tool-panel" id="tool-sound">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Laboratorio de sonidos</label><button class="tbtn" data-back>← Volver</button></div>
+          <div class="grid2">
+            <div><label class="t">Frecuencia (Hz)</label><input type="number" id="sndFreq" value="440" min="20" max="2000"></div>
+            <div><label class="t">Tipo</label>
+              <select id="sndType"><option>sine</option><option>square</option><option>sawtooth</option><option>triangle</option></select>
+            </div>
+          </div>
+          <div class="grid2">
+            <div><label class="t">Duración (s)</label><input type="number" id="sndDur" value="0.5" min="0.05" max="5" step="0.05"></div>
+            <div style="display:flex;align-items:flex-end;gap:8px">
+              <button class="btn primary grow" id="sndPlay">▶ Reproducir</button>
+              <button class="btn ghost" id="sndStop">⏹</button>
+            </div>
+          </div>
+          <p class="hint">Usa el oscilador Web Audio. Para efectos más complejos combina varias notas.</p>
+          <button class="btn ghost" id="sndExport">Exportar último tono (WAV)</button>
+        </div>
+
+        <div class="card tool-panel" id="tool-colors">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Paleta de colores</label><button class="tbtn" data-back>← Volver</button></div>
+          <div class="row">
+            <input type="color" id="baseColor" value="#2563eb" style="width:60px;height:40px;padding:2px">
+            <select id="paletteType" class="grow">
+              <option value="analogous">Análoga</option>
+              <option value="complementary">Complementaria</option>
+              <option value="triadic">Triádica</option>
+              <option value="mono">Monocromática</option>
+            </select>
+            <button class="btn primary" id="genPalette">Generar</button>
+          </div>
+          <div class="palette" id="paletteOut"></div>
+          <button class="btn ghost" id="copyPalette">Copiar CSS variables</button>
+        </div>
+
+        <div class="card tool-panel" id="tool-names">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Generador de nombres</label><button class="tbtn" data-back>← Volver</button></div>
+          <input id="nameSeed" placeholder="Tema o palabra clave (opcional)">
+          <button class="btn primary" id="genNames">Generar nombres</button>
+          <div class="list" id="namesOut"></div>
+        </div>
+
+        <div class="card tool-panel" id="tool-ideas">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Ideas de proyectos</label><button class="tbtn" data-back>← Volver</button></div>
+          <select id="ideaCat">
+            <option value="web">Páginas web / landings</option>
+            <option value="app">Apps y herramientas</option>
+            <option value="game">Juegos</option>
+            <option value="business">Negocios locales</option>
+          </select>
+          <button class="btn primary" id="genIdeas">Generar ideas</button>
+          <div class="list" id="ideasOut"></div>
+        </div>
+
+        <div class="card tool-panel" id="tool-video">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Prompts de vídeo</label><button class="tbtn" data-back>← Volver</button></div>
+          <select id="vidStyle">
+            <option value="cinematic">Cinemático</option>
+            <option value="product">Producto / demo</option>
+            <option value="anime">Anime / ilustrado</option>
+            <option value="ugc">UGC / realista</option>
+            <option value="abstract">Abstracto / motion</option>
+          </select>
+          <textarea id="vidIdea" placeholder="Describe la escena o el producto…"></textarea>
+          <button class="btn primary" id="genVidPrompt">Generar prompt</button>
+          <textarea id="vidOut" readonly style="min-height:140px"></textarea>
+          <button class="btn ghost" id="copyVid">Copiar prompt</button>
+        </div>
+
+        <div class="card tool-panel" id="tool-format">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Formatear / Minificar</label><button class="tbtn" data-back>← Volver</button></div>
+          <textarea id="fmtIn" placeholder="Pega HTML, CSS o JS…" style="min-height:160px"></textarea>
+          <div class="row">
+            <button class="btn primary grow" id="doFormat">Formatear</button>
+            <button class="btn ghost grow" id="doMinify">Minificar</button>
+          </div>
+          <textarea id="fmtOut" readonly style="min-height:120px"></textarea>
+          <button class="btn ghost" id="copyFmt">Copiar resultado</button>
+        </div>
+
+        <div class="card tool-panel" id="tool-seo">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Metadatos SEO</label><button class="tbtn" data-back>← Volver</button></div>
+          <input id="seoTitle" placeholder="Título de la página">
+          <input id="seoDesc" placeholder="Descripción (máx ~160 caracteres)">
+          <input id="seoUrl" placeholder="URL canónica (opcional)">
+          <button class="btn primary" id="genSeo">Generar etiquetas</button>
+          <textarea id="seoOut" readonly style="min-height:140px;font-family:ui-monospace,monospace;font-size:12px"></textarea>
+          <button class="btn ghost" id="copySeo">Copiar</button>
+        </div>
+
+        <div class="card tool-panel" id="tool-counter">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Contador de texto</label><button class="tbtn" data-back>← Volver</button></div>
+          <textarea id="cntText" placeholder="Pega texto…" style="min-height:160px"></textarea>
+          <div class="stats" id="cntStats">
+            <div class="stat"><b id="cChars">0</b><span>Caracteres</span></div>
+            <div class="stat"><b id="cWords">0</b><span>Palabras</span></div>
+            <div class="stat"><b id="cLines">0</b><span>Líneas</span></div>
+          </div>
+        </div>
+
+        <div class="card tool-panel" id="tool-favicon">
+          <div class="row" style="justify-content:space-between"><label class="t" style="margin:0">Favicon SVG</label><button class="tbtn" data-back>← Volver</button></div>
+          <div class="grid2">
+            <div><label class="t">Texto / emoji</label><input id="favText" value="L" maxlength="2"></div>
+            <div><label class="t">Color fondo</label><input type="color" id="favBg" value="#2563eb"></div>
+          </div>
+          <div class="row" style="align-items:center;gap:16px">
+            <div id="favPreview" style="width:64px;height:64px;border-radius:14px;background:#2563eb;display:grid;place-items:center;color:#fff;font-weight:800;font-size:28px">L</div>
+            <button class="btn primary" id="genFav">Actualizar</button>
+            <button class="btn ghost" id="dlFav">Descargar SVG</button>
+          </div>
+          <textarea id="favCode" readonly style="min-height:80px;font-family:ui-monospace,monospace;font-size:11px"></textarea>
+        </div>
+      </section>
+
+      <!-- HELP -->
+      <section id="sec-help" hidden>
+        <div class="card">
+          <label class="t">Cómo publicar tu página</label>
+          <p class="hint" style="margin-bottom:10px">Lumo genera un único archivo HTML. Puedes publicarlo gratis en varios sitios:</p>
+          <ol class="hint" style="padding-left:18px;display:flex;flex-direction:column;gap:8px">
+            <li><b>Netlify Drop</b> — Arrastra el archivo .html a <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>.</li>
+            <li><b>GitHub Pages</b> — Sube el archivo a un repositorio y activa Pages.</li>
+            <li><b>Cloudflare Pages / Vercel</b> — Sube el proyecto o el archivo único.</li>
+            <li><b>Surge.sh</b> — <code>npx surge</code> desde la carpeta del archivo.</li>
+          </ol>
+          <p class="hint" style="margin-top:12px">Las claves API se guardan solo en tu navegador (localStorage). No se envían a ningún servidor de Lumo. No las compartas en enlaces.</p>
+        </div>
+        <div class="card">
+          <label class="t">Instalar como app (PWA)</label>
+          <p class="hint">En Safari (iPhone): Comparte → «Añadir a pantalla de inicio». En Chrome/Android: menú → «Instalar aplicación» o «Añadir a pantalla de inicio».</p>
+          <button class="btn primary" id="installPwa" hidden>Instalar Lumo</button>
+        </div>
+        <div class="card">
+          <label class="t">Atajos</label>
+          <p class="hint"><b>Ctrl/Cmd + Enter</b> — Generar · <b>Deshacer</b> recupera la versión anterior · El historial guarda las últimas páginas.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav mobile -->
+<nav class="bnav">
+  <button data-sec="dashboard" class="on"><i data-ic="home"></i>Inicio</button>
+  <button data-sec="create"><i data-ic="spark"></i>Crear</button>
+  <button data-sec="projects"><i data-ic="folder"></i>Proyectos</button>
+  <button data-sec="tools"><i data-ic="wrench"></i>Tools</button>
+</nav>
+
+<!-- Settings sheet -->
+<div class="sheet" id="sSettings"><div class="sheet-in">
+  <h3>Ajustes <button class="icon-btn" data-close data-ic="x" aria-label="Cerrar"></button></h3>
+  <div>
+    <label class="t">Proveedor de IA</label>
+    <div class="seg" id="segProv">
+      <button data-v="gemini">Gemini · gratis</button>
+      <button data-v="claude">Claude</button>
+    </div>
+  </div>
+  <div>
+    <label class="t" for="apiKey">API key</label>
+    <div class="keyrow">
+      <input id="apiKey" type="password" placeholder="Pega tu clave aquí" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="icon-btn" id="eye" data-ic="eye" aria-label="Mostrar" style="flex:none"></button>
+    </div>
+    <p class="hint" id="keyHint" style="margin-top:8px"></p>
+  </div>
+  <div>
+    <label class="t" for="model">Modelo</label>
+    <select id="model"></select>
+    <input id="customModel" placeholder="nombre del modelo" style="margin-top:8px" hidden>
+  </div>
+  <div>
+    <label class="t">Velocidad</label>
+    <div class="seg" id="segSpeed">
+      <button data-v="fast">⚡ Rápido</button>
+      <button data-v="quality">🎯 Calidad</button>
+    </div>
+    <p class="hint" style="margin-top:8px">Rápido responde en segundos. Calidad tarda más pero cuida más los detalles.</p>
+  </div>
+  <p class="hint">🔒 Tu clave se guarda solo en este navegador y se envía únicamente a Google o Anthropic. No está cifrada como en un backend.</p>
+  <button class="btn primary" id="saveSet">Guardar</button>
+</div></div>
+
+<!-- History sheet -->
+<div class="sheet" id="sHist"><div class="sheet-in">
+  <h3>Historial rápido <button class="icon-btn" data-close data-ic="x" aria-label="Cerrar"></button></h3>
+  <div class="list" id="histList"></div>
+</div></div>
+
+<!-- Share sheet -->
+<div class="sheet" id="sShare"><div class="sheet-in">
+  <h3>Compartir <button class="icon-btn" data-close data-ic="x" aria-label="Cerrar"></button></h3>
+  <div class="warn" id="shareNote" hidden>Estás usando Lumo desde un archivo local: los <b>enlaces</b> solo funcionan si subes Lumo a internet (Netlify Drop, GitHub Pages…). Mientras tanto, comparte el <b>archivo .html</b>.</div>
+  <button class="btn ghost shareb" id="shLink" data-ic="link"> Copiar enlace de la página</button>
+  <button class="btn ghost shareb" id="shNative" data-ic="share"> Compartir con…</button>
+  <button class="btn ghost shareb" id="shWa" data-ic="chat"> Enviar por WhatsApp</button>
+  <button class="btn ghost shareb" id="shFile" data-ic="file"> Compartir archivo .html</button>
+  <button class="btn ghost shareb" id="shTab" data-ic="globe"> Abrir en pestaña nueva</button>
+  <button class="btn ghost shareb" id="shApp" data-ic="spark"> Invitar a mis amigos a Lumo</button>
+  <p class="hint">El enlace lleva la página dentro (no se sube a ningún servidor). Tus amigos la ven al instante y pueden editarla con su propia clave.</p>
+</div></div>
+
+<!-- Fullscreen -->
+<div class="full" id="full">
+  <button class="tbtn" id="closeFull" data-ic="x" aria-label="Cerrar"> Cerrar</button>
+  <iframe id="frameFull" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
+</div>
+
+<!-- Viewer mode -->
+<div id="viewer" hidden>
+  <div class="vbar">
+    <div class="brand"><svg width="26" height="26" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="url(#lg)"/><path d="M26 22 16 32l10 10M38 22l10 10-10 10" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>Hecho con Lumo</div>
+    <div class="row">
+      <button class="tbtn" id="vDl" data-ic="download" aria-label="Descargar"><span>Bajar</span></button>
+      <button class="tbtn" id="vEdit" data-ic="spark" aria-label="Editar"><span>Editar con IA</span></button>
+      <button class="tbtn on" id="vMine" data-ic="plus" aria-label="Crear"><span>Crear la mía</span></button>
+    </div>
+  </div>
+  <iframe id="vframe" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}},
+  getJSON(k,def){try{return JSON.parse(localStorage.getItem(k))||def}catch(e){return def}},
+  setJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const G = "https://generativelanguage.googleapis.com/v1beta";
+
+/* ---------- Icons ---------- */
+const ICONS = {
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  download:'<path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/>',
+  share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',
+  expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  key:'<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  mic:'<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  phone:'<rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/>',
+  monitor:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  tablet:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M11 17h2"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  spark:'<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  chat:'<path d="M21 12a8 8 0 0 1-11.7 7L3 21l2-6A8 8 0 1 1 21 12z"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  home:'<path d="M3 11l9-8 9 8M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4M12 17h.01"/>',
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+  upload:'<path d="M12 16V4m0 0-4 4m4-4 4 4M4 20h16"/>',
+  wand:'<path d="m15 4 1.5 3.5L20 9l-3.5 1.5L15 14l-1.5-3.5L10 9l3.5-1.5L15 4zM5 16l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2z"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>'
+};
+function icon(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[n]||'') + '</svg>'; }
+document.querySelectorAll("[data-ic]").forEach(el => {
+  if (!el.querySelector("svg")) el.insertAdjacentHTML("afterbegin", icon(el.dataset.ic));
+});
+
+function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("on"),2800); }
+
+/* ---------- Theme ---------- */
+(function(){
+  const saved = store.get("lumo_theme");
+  const dark = saved ? saved === "dark" : window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+})();
+function toggleTheme(){
+  const d = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = d; store.set("lumo_theme", d);
+}
+$("btnTheme").onclick = toggleTheme;
+$("btnThemeSide").onclick = toggleTheme;
+
+/* ---------- State ---------- */
+const CLAUDE_MODELS = [
+  ["claude-haiku-5-5","claude-haiku-5-5 · el más rápido"],
+  ["claude-sonnet-5-5","claude-sonnet-5-5 · equilibrado"],
+  ["claude-opus-5-5","claude-opus-5-5 · el más potente"]
+];
+let geminiModels = [
+  ["gemini-2.5-flash","gemini-2.5-flash (recomendado)"],
+  ["gemini-2.5-flash-lite","gemini-2.5-flash-lite · rápido y ligero"],
+  ["gemini-2.0-flash","gemini-2.0-flash"]
+];
+const S = {
+  provider: store.get("lumo_prov") || "gemini",
+  speed: store.get("lumo_speed") || "fast",
+  keys: { gemini: store.get("lumo_key"), claude: store.get("lumo_key_claude") },
+  models: { gemini: store.get("lumo_model") || "gemini-2.5-flash", claude: store.get("lumo_model_claude") || "claude-haiku-5-5" }
+};
+if (/^gemini-(1\.|2\.0)/.test(S.models.gemini) && !/2\.5|2\.0-flash/.test(S.models.gemini)) S.models.gemini = "gemini-2.5-flash";
+function persist(){
+  store.set("lumo_prov", S.provider); store.set("lumo_speed", S.speed);
+  store.set("lumo_key", S.keys.gemini); store.set("lumo_key_claude", S.keys.claude);
+  store.set("lumo_model", S.models.gemini); store.set("lumo_model_claude", S.models.claude);
+}
+let html = "", versions = [], busy = false, ctrl = null, styleSel = "", projType = "", currentProjId = null;
+let gensCount = parseInt(store.get("lumo_gens")||"0") || 0;
+
+/* ---------- Navigation ---------- */
+const TITLES = { dashboard:"Dashboard", create:"Crear con IA", projects:"Proyectos", tools:"Herramientas", help:"Ayuda y publicación" };
+function go(sec){
+  document.querySelectorAll("[id^=sec-]").forEach(s => s.hidden = true);
+  const el = $("sec-"+sec); if (el) { el.hidden = false; el.classList.add("fade-in"); }
+  document.querySelectorAll(".nav-item[data-sec], .bnav button[data-sec]").forEach(b => b.classList.toggle("on", b.dataset.sec === sec));
+  $("pageTitle").textContent = TITLES[sec] || sec;
+  document.body.dataset.section = sec;
+  closeSidebar();
+  if (sec === "dashboard") refreshDashboard();
+  if (sec === "projects") renderProjects();
+  if (sec === "tools") showToolsGrid();
+}
+document.querySelectorAll("[data-sec]").forEach(b => b.onclick = () => go(b.dataset.sec));
+document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+$("quickImprove").onclick = () => { go("create"); if (html) { $("prompt").value = "Mejora el diseño, la accesibilidad y la experiencia de usuario de esta página. Hazla más moderna y pulida."; $("prompt").focus(); } };
+
+/* Sidebar mobile */
+function openSidebar(){ $("sidebar").classList.add("open"); $("sideOverlay").classList.add("on"); }
+function closeSidebar(){ $("sidebar").classList.remove("open"); $("sideOverlay").classList.remove("on"); }
+$("btnMenu").onclick = openSidebar;
+$("sideOverlay").onclick = closeSidebar;
+function updateMenuBtn(){ $("btnMenu").style.display = window.innerWidth <= 900 ? "grid" : "none"; }
+window.addEventListener("resize", updateMenuBtn); updateMenuBtn();
+
+/* ---------- Settings ---------- */
+const HINTS = {
+  gemini: 'Es <b>gratis</b>. Consíguela en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>.',
+  claude: 'Claude es de <b>pago</b>. Consíguela en <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.'
+};
+function renderModels(){
+  const list = S.provider === "gemini" ? geminiModels : CLAUDE_MODELS;
+  const cur = S.models[S.provider];
+  $("model").innerHTML = list.map(([v,l]) => `<option value="${v}">${l}</option>`).join("") + '<option value="custom">Otro (escribir nombre)…</option>';
+  if (list.some(x => x[0] === cur)) { $("model").value = cur; $("customModel").hidden = true; }
+  else { $("model").value = "custom"; $("customModel").hidden = false; $("customModel").value = cur; }
+}
+function curModel(){ const v = $("model").value; return (v === "custom" ? $("customModel").value.trim() : v) || S.models[S.provider]; }
+function paintSettings(){
+  document.querySelectorAll("#segProv button").forEach(b => b.classList.toggle("on", b.dataset.v === S.provider));
+  document.querySelectorAll("#segSpeed button").forEach(b => b.classList.toggle("on", b.dataset.v === S.speed));
+  $("apiKey").value = S.keys[S.provider] || "";
+  $("keyHint").innerHTML = HINTS[S.provider];
+  renderModels();
+}
+document.querySelectorAll("#segProv button").forEach(b => b.onclick = () => {
+  S.keys[S.provider] = $("apiKey").value.trim(); S.models[S.provider] = curModel();
+  S.provider = b.dataset.v; paintSettings();
+  if (S.provider === "gemini") loadGeminiModels();
+});
+document.querySelectorAll("#segSpeed button").forEach(b => b.onclick = () => { S.speed = b.dataset.v; paintSettings(); });
+$("model").onchange = () => { $("customModel").hidden = $("model").value !== "custom"; };
+$("eye").onclick = () => { $("apiKey").type = $("apiKey").type === "password" ? "text" : "password"; };
+$("saveSet").onclick = async () => {
+  S.keys[S.provider] = $("apiKey").value.trim(); S.models[S.provider] = curModel();
+  persist(); closeSheets(); toast("Guardado ✓");
+  if (S.provider === "gemini") loadGeminiModels();
+};
+$("btnSet").onclick = () => openSheet("sSettings");
+
+async function loadGeminiModels(){
+  const key = (S.provider === "gemini" && $("apiKey").value.trim()) || S.keys.gemini;
+  if (!key) return;
+  try {
+    const r = await fetch(G + "/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+    if (!r.ok) return;
+    const d = await r.json();
+    const names = (d.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => m.name.replace("models/", ""))
+      .filter(n => /^gemini-[\d.]+-flash(-lite)?(-latest|-preview[\w-]*)?$/.test(n) && !/(image|tts|live|audio|embedding|robotics|omni|computer|native)/.test(n))
+      .sort((a, b) => {
+        const pa = /preview/.test(a), pb = /preview/.test(b);
+        if (pa !== pb) return pa ? 1 : -1;
+        const va = parseFloat((a.match(/gemini-([\d.]+)/)||[])[1]||0), vb = parseFloat((b.match(/gemini-([\d.]+)/)||[])[1]||0);
+        if (va !== vb) return vb - va;
+        return /lite/.test(a) - /lite/.test(b);
+      });
+    if (!names.length) return;
+    const label = (n, i) => n + (/lite/.test(n) ? " · rápido y ligero" : "") + (/preview/.test(n) ? " · preview" : "") + (i === 0 ? " (recomendado)" : "");
+    geminiModels = names.map((n, i) => [n, label(n, i)]);
+    if (!names.includes(S.models.gemini) && !/custom/.test(S.models.gemini)) S.models.gemini = names[0];
+    persist();
+    if (S.provider === "gemini") renderModels();
+  } catch(e) {}
+}
+
+/* ---------- Sheets ---------- */
+function openSheet(id){ if (id === "sSettings") paintSettings(); $(id).classList.add("on"); }
+function closeSheets(){ document.querySelectorAll(".sheet").forEach(s => s.classList.remove("on")); }
+document.querySelectorAll(".sheet").forEach(s => s.addEventListener("click", e => { if (e.target === s) closeSheets(); }));
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = closeSheets);
+
+/* ---------- Templates, styles, project types ---------- */
+const TPLS = [
+  ["🧮","Calculadora","Una calculadora científica con historial de operaciones, soporte de teclado y botón de borrar"],
+  ["✅","Tareas","Una app de lista de tareas con categorías, prioridades, filtros, buscador, contador y barra de progreso"],
+  ["🎮","Memoria","Un juego de memoria con emojis, niveles de dificultad, contador de movimientos, cronómetro y récord"],
+  ["⏱️","Cronómetro","Un cronómetro y temporizador con vueltas, cuenta regresiva, alarma sonora y pantalla grande"],
+  ["🛍️","Tienda","Una tienda online de ropa con catálogo, filtros, carrito funcional, totales y botón de pedir por WhatsApp"],
+  ["📝","Notas","Una app de notas con colores, etiquetas, buscador, fijar notas y exportar"],
+  ["🍔","Menú","Un menú digital para restaurante con categorías, buscador, carrito y pedido por WhatsApp"],
+  ["👤","Portafolio","Un portafolio personal para un desarrollador con proyectos, habilidades, sobre mí y formulario de contacto"],
+  ["🎂","Invitación","Una invitación de cumpleaños con cuenta regresiva, confirmación de asistencia y ubicación"],
+  ["💱","Conversor","Un conversor de unidades y monedas con varias categorías e intercambio rápido"],
+  ["🐍","Snake","El juego de la serpiente con controles táctiles y de teclado, puntuación y récord"],
+  ["🎲","Dados","Un simulador de dados y ruleta con animaciones, historial y opciones personalizadas"]
+];
+const STYLES = [
+  ["Minimalista","limpio, minimalista, mucho espacio en blanco, colores suaves"],
+  ["Colorido","vibrante, colorido, divertido, con degradados"],
+  ["Oscuro","modo oscuro elegante con acentos de color"],
+  ["Cristal","glassmorphism: transparencias, desenfoques y degradados suaves"],
+  ["Retro","retro pixelado estilo años 80-90"],
+  ["Neón","futurista con luces de neón sobre fondo oscuro"]
+];
+const PROJ_TYPES = [
+  ["web","Web / sitio"],
+  ["landing","Landing page"],
+  ["portfolio","Portafolio"],
+  ["tienda","Tienda"],
+  ["blog","Blog"],
+  ["dashboard","Dashboard"],
+  ["app","App / herramienta"],
+  ["juego","Juego"]
+];
+PROJ_TYPES.forEach(([v,l]) => {
+  const b = document.createElement("button"); b.className = "chip"; b.textContent = l; b.dataset.v = v;
+  b.onclick = () => {
+    document.querySelectorAll("#projTypes .chip").forEach(c => c.classList.remove("on"));
+    b.classList.add("on"); projType = v;
+  };
+  $("projTypes").appendChild(b);
+});
+TPLS.forEach(([e,l,p]) => {
+  const b = document.createElement("button"); b.className = "chip"; b.textContent = e + " " + l;
+  b.onclick = () => { $("prompt").value = "Crea " + p.charAt(0).toLowerCase() + p.slice(1); $("prompt").focus(); };
+  $("tpls").appendChild(b);
+});
+STYLES.forEach(([l,d]) => {
+  const b = document.createElement("button"); b.className = "chip"; b.textContent = l;
+  b.onclick = () => {
+    const on = b.classList.contains("on");
+    document.querySelectorAll("#styles .chip").forEach(c => c.classList.remove("on"));
+    if (on) styleSel = ""; else { b.classList.add("on"); styleSel = d; }
+  };
+  $("styles").appendChild(b);
+});
+
+/* ---------- Voice ---------- */
+(function(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("mic").hidden = true; return; }
+  let rec = null;
+  $("mic").onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new SR(); rec.lang = "es-MX"; rec.interimResults = false;
+    rec.onresult = e => { const t = e.results[0][0].transcript; $("prompt").value = ($("prompt").value + " " + t).trim(); };
+    rec.onend = () => { rec = null; $("mic").classList.remove("on"); };
+    rec.onerror = () => { toast("No pude escucharte"); };
+    $("mic").classList.add("on"); rec.start();
+  };
+})();
+
+/* ---------- Tabs & devices ---------- */
+function setTab(t){
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  $("frameWrap").style.display = t === "preview" ? "block" : "none";
+  $("codeView").style.display = t === "code" ? "block" : "none";
+  $("editorArea").classList.toggle("on", t === "edit");
+  if (t === "edit" && html) {
+    $("codeEdit").value = html;
+    updateLineCount();
+  }
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.t));
+function setDevice(d){
+  $("stage").classList.remove("phone","tablet");
+  if (d === "phone") $("stage").classList.add("phone");
+  if (d === "tablet") $("stage").classList.add("tablet");
+  $("devPc").classList.toggle("on", d === "pc");
+  $("devTablet").classList.toggle("on", d === "tablet");
+  $("devPhone").classList.toggle("on", d === "phone");
+}
+$("devPc").onclick = () => setDevice("pc");
+$("devTablet").onclick = () => setDevice("tablet");
+$("devPhone").onclick = () => setDevice("phone");
+
+function show(code){
+  html = code;
+  $("frame").srcdoc = code;
+  $("codeView").textContent = code;
+  $("codeEdit").value = code;
+  $("empty").style.display = "none";
+  $("genTxt").textContent = "Aplicar cambio";
+  $("prompt").placeholder = "Describe el cambio que quieres…";
+  $("undo").disabled = versions.length === 0;
+  updateLineCount();
+  autoSaveDraft();
+}
+
+function clean(t){
+  t = t.trim();
+  const m = t.match(/```(?:html)?\s*([\s\S]*?)(?:```|$)/i);
+  if (m && /<|html/i.test(m[1])) t = m[1].trim();
+  const i = t.search(/<!doctype html|<html/i);
+  if (i > 0) t = t.slice(i);
+  if (/<html|<!doctype/i.test(t)) {
+    if (!/<\/body>/i.test(t)) t += "\n</body>";
+    if (!/<\/html>/i.test(t)) t += "\n</html>";
+  }
+  return t;
+}
+
+function updateLineCount(){
+  const t = $("codeEdit").value || "";
+  const lines = t ? t.split("\n").length : 0;
+  $("lineCount").textContent = lines + " líneas · " + t.length + " caracteres";
+}
+$("codeEdit").addEventListener("input", updateLineCount);
+
+$("applyEdit").onclick = () => {
+  const v = $("codeEdit").value;
+  if (!v.trim()) return toast("El editor está vacío");
+  if (html) { versions.push(html); if (versions.length > 15) versions.shift(); }
+  show(v);
+  setTab("preview");
+  toast("Cambios aplicados ✓");
+};
+$("doReplace").onclick = () => {
+  const s = $("searchIn").value, r = $("replaceIn").value;
+  if (!s) return;
+  const ta = $("codeEdit");
+  const i = ta.value.indexOf(s);
+  if (i < 0) return toast("No encontrado");
+  ta.value = ta.value.slice(0,i) + r + ta.value.slice(i + s.length);
+  updateLineCount();
+};
+$("doReplaceAll").onclick = () => {
+  const s = $("searchIn").value, r = $("replaceIn").value;
+  if (!s) return;
+  $("codeEdit").value = $("codeEdit").value.split(s).join(r);
+  updateLineCount();
+  toast("Reemplazado");
+};
+
+/* ---------- System prompt (original preserved & extended) ---------- */
+const SYSTEM = `Eres un desarrollador web senior y diseñador UI. Devuelve SIEMPRE un único archivo HTML completo y válido (con <!DOCTYPE html>), con CSS en <style> y JavaScript en <script> dentro del mismo archivo, sin dependencias externas salvo Google Fonts si hace falta.
+
+REGLAS DE FUNCIONALIDAD (lo más importante):
+- Todo lo que se vea debe FUNCIONAR de verdad: cada botón, menú, pestaña, formulario, filtro, buscador, contador, carrito, modal o juego debe tener su lógica real en JavaScript. Prohibido dejar botones decorativos, enlaces "#" vacíos, "próximamente" o código de relleno.
+- Si el usuario pide una app o herramienta (calculadora, tareas, juego, conversor, cronómetro, notas, etc.), construye la versión completa y usable, con todos los casos y errores cubiertos (división entre cero, campos vacíos, entradas inválidas).
+- Si pide una página informativa (landing, portafolio, negocio, menú), hazla con contenido realista y específico del tema (sin lorem ipsum) y con interacciones reales: menú móvil que abre y cierra, scroll suave, formulario de contacto con validación y mensaje de éxito, galería o carrusel que funcione, acordeón de preguntas frecuentes, botón de WhatsApp o de contacto, etc.
+- Guarda los datos del usuario con localStorage cuando tenga sentido (tareas, notas, puntuaciones, preferencias), siempre dentro de try/catch porque puede estar bloqueado en la vista previa.
+
+EXTRAS QUE DEBES AÑADIR SIEMPRE QUE ENCAJEN:
+- Modo claro/oscuro con un botón y que recuerde la elección.
+- Animaciones suaves, estados hover y active, y retroalimentación visual (avisos tipo toast, confirmaciones, estados vacíos con un mensaje amable).
+- Atajos de teclado y soporte táctil cuando sean útiles.
+- Un par de funciones extra pensadas para ese tipo de página (por ejemplo: historial en una calculadora, filtros y contador en una lista de tareas, récord y reinicio en un juego, buscador en un catálogo).
+
+DISEÑO Y CALIDAD:
+- Responsive con enfoque móvil primero (viewport meta, botones táctiles de buen tamaño), moderno, limpio, con buena tipografía, espaciado y contraste; accesible (etiquetas, aria, foco visible).
+- Sin errores en consola; revisa mentalmente que el JavaScript no falle.
+- Escribe todos los textos en el idioma del usuario.
+
+VELOCIDAD:
+- Código compacto y eficiente: CSS conciso, sin comentarios innecesarios, sin repetir estilos. Prefiere emojis o SVG inline pequeños en vez de imágenes.
+
+Responde SOLO con el código HTML, sin explicaciones ni bloques markdown.`;
+
+/* ---------- Streaming ---------- */
+async function readSSE(res, cb){
+  const rd = res.body.getReader(), dec = new TextDecoder(); let buf = "";
+  while (true) {
+    const { done, value } = await rd.read(); if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.search(/\r?\n\r?\n/)) >= 0) {
+      const block = buf.slice(0, i); buf = buf.slice(i).replace(/^\r?\n\r?\n/, "");
+      for (const line of block.split(/\r?\n/)) {
+        if (!line.startsWith("data:")) continue;
+        const d = line.slice(5).trim(); if (!d || d === "[DONE]") continue;
+        let j; try { j = JSON.parse(d); } catch(e) { continue; }
+        cb(j);
+      }
+    }
+  }
+}
+async function httpError(res){
+  const d = await res.json().catch(() => ({}));
+  const e = new Error(d?.error?.message || ("Error " + res.status)); e.status = res.status; return e;
+}
+const shouldRetry = e => e.status === 404 || e.status === 429 || /no longer available|not found|quota|rate|exhausted/i.test(e.message || "");
+
+async function runGemini(user, onChunk, reset, signal){
+  const key = S.keys.gemini, chosen = S.models.gemini;
+  const queue = [chosen, ...geminiModels.map(m => m[0]).filter(v => v !== chosen)];
+  let lastErr = null;
+  for (const m of queue) {
+    for (const think of (S.speed === "fast" ? [true, false] : [false])) {
+      try {
+        reset();
+        const gc = { temperature: 0.8, maxOutputTokens: S.speed === "fast" ? 16384 : 32768 };
+        if (think) gc.thinkingConfig = { thinkingBudget: 0 };
+        const res = await fetch(G + "/models/" + encodeURIComponent(m) + ":streamGenerateContent?alt=sse", {
+          method: "POST", signal,
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: SYSTEM }] },
+            contents: [{ role: "user", parts: [{ text: user }] }],
+            generationConfig: gc
+          })
+        });
+        if (!res.ok) throw await httpError(res);
+        await readSSE(res, j => {
+          if (j.error) { const e = new Error(j.error.message || "Error"); e.status = j.error.code; throw e; }
+          for (const p of (j.candidates?.[0]?.content?.parts || [])) if (p.text && !p.thought) onChunk(p.text);
+        });
+        if (m !== chosen) { S.models.gemini = m; persist(); toast("Usé " + m + " porque el otro no estaba disponible"); }
+        return;
+      } catch(e) {
+        if (e.name === "AbortError") throw e;
+        lastErr = e;
+        if (think && e.status === 400 && /think/i.test(e.message)) continue;
+        break;
+      }
+    }
+    if (!shouldRetry(lastErr)) throw lastErr;
+  }
+  throw lastErr || new Error("No se pudo generar");
+}
+
+async function runClaude(user, onChunk, reset, signal){
+  reset();
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", signal,
+    headers: {
+      "content-type": "application/json", "x-api-key": S.keys.claude,
+      "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({ model: S.models.claude, max_tokens: 16000, stream: true, system: SYSTEM, messages: [{ role: "user", content: user }] })
+  });
+  if (!res.ok) throw await httpError(res);
+  await readSSE(res, j => {
+    if (j.type === "content_block_delta" && j.delta?.text) onChunk(j.delta.text);
+    if (j.type === "error") throw new Error(j.error?.message || "Error de Claude");
+  });
+}
+
+/* ---------- Generate ---------- */
+function fmtSec(s){ return s < 60 ? Math.round(s) + " s" : Math.floor(s / 60) + " min " + Math.round(s % 60) + " s"; }
+function setStatus(a, b){ $("status").innerHTML = "<span>" + a + "</span><span>" + (b || "") + "</span>"; }
+
+async function generate(extraInstruction){
+  if (busy) return;
+  const prov = S.provider;
+  if (!S.keys[prov]) { openSheet("sSettings"); return toast("Pega tu API key para empezar"); }
+  let base = ($("prompt").value.trim() || extraInstruction || "").trim();
+  if (!base && !extraInstruction) return toast("Escribe qué quieres crear");
+  if (extraInstruction && !base) base = extraInstruction;
+  const style = styleSel ? "\nEstilo visual: " + styleSel + "." : "";
+  const typeHint = projType ? "\nTipo de proyecto: " + projType + "." : "";
+  const user = html
+    ? "Este es el HTML actual:\n\n" + html + "\n\nAplica este cambio y devuelve el HTML completo actualizado:\n" + base + style + typeHint
+    : base + style + typeHint;
+
+  busy = true; ctrl = new AbortController();
+  $("gen").disabled = true; $("stop").hidden = false;
+  $("pbar").classList.add("busy"); $("pfill").style.width = "2%";
+  go("create"); setTab("code"); $("empty").style.display = "none"; $("codeView").textContent = "";
+
+  let text = "", last = 0;
+  const avg = parseInt(store.get("lumo_avg")) || 9000;
+  const expected = html ? Math.max(html.length * 1.05, 4000) : avg;
+  const t0 = performance.now();
+  const tick = setInterval(() => {
+    const sec = (performance.now() - t0) / 1000, got = text.length;
+    let pct, right;
+    if (!got) { pct = Math.min(8, sec * 1.6); right = "Conectando…"; }
+    else {
+      pct = Math.min(96, 8 + (got / expected) * 88);
+      const rate = got / Math.max(sec, .1);
+      const rem = Math.max(0, (expected - got) / rate);
+      right = got > expected ? "Terminando…" : "faltan ~" + fmtSec(rem + 1);
+    }
+    $("pfill").style.width = pct + "%";
+    setStatus("Creando… <b>" + Math.round(pct) + "%</b> · " + fmtSec(sec), right);
+    if (got !== last && $("codeView").style.display === "block") { last = got; $("codeView").textContent = text; $("codeView").scrollTop = $("codeView").scrollHeight; }
+  }, 200);
+
+  const onChunk = d => { text += d; };
+  const reset = () => { text = ""; };
+  try {
+    if (prov === "gemini") await runGemini(user, onChunk, reset, ctrl.signal);
+    else await runClaude(user, onChunk, reset, ctrl.signal);
+    if (text.trim().length < 40) throw new Error("La IA no devolvió contenido. Intenta con otra descripción.");
+    const out = clean(text);
+    if (html) { versions.push(html); if (versions.length > 15) versions.shift(); }
+    show(out);
+    store.set("lumo_avg", String(Math.round(avg * .6 + out.length * .4)));
+    gensCount++; store.set("lumo_gens", String(gensCount));
+    addHist(base || "Mejora / corrección", out);
+    const sec = (performance.now() - t0) / 1000;
+    $("pfill").style.width = "100%";
+    setStatus("✓ Listo en <b>" + sec.toFixed(1) + " s</b>", (out.length / 1024).toFixed(1) + " KB");
+    setTab("preview"); $("prompt").value = "";
+    toast("¡Listo! ✨");
+  } catch(e) {
+    $("pfill").style.width = "0%";
+    if (e.name === "AbortError") { setStatus("Cancelado", ""); toast("Cancelado"); setTab(html ? "preview" : "code"); if (!html) $("empty").style.display = "grid"; }
+    else {
+      let m = e.message || "Error desconocido";
+      if (/quota|rate|429|exhausted/i.test(m)) m = "Límite gratuito alcanzado. Espera un minuto o cambia de modelo.";
+      else if (/API key|API_KEY|invalid x-api-key|authentication/i.test(m) || e.status === 401 || e.status === 403) m = "La API key no es válida. Revísala en ajustes.";
+      else if (/not found|404|no longer available/i.test(m)) { m = "Ese modelo ya no está disponible. Elige otro en ajustes."; openSheet("sSettings"); }
+      else if (/Failed to fetch|NetworkError/i.test(m)) m = "Sin conexión o bloqueado por el navegador.";
+      setStatus("⚠️ " + m, ""); toast(m);
+      if (html) setTab("preview"); else { setTab("code"); }
+    }
+  } finally {
+    clearInterval(tick);
+    busy = false; ctrl = null; $("gen").disabled = false; $("stop").hidden = true; $("pbar").classList.remove("busy");
+    if (!html && $("codeView").textContent === "") $("empty").style.display = "grid";
+  }
+}
+$("gen").onclick = () => generate();
+$("stop").onclick = () => { if (ctrl) ctrl.abort(); };
+$("prompt").addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") generate(); });
+$("improveBtn").onclick = () => {
+  if (!html) return toast("Primero genera una página");
+  generate("Mejora el diseño visual, la accesibilidad, las animaciones y la experiencia de usuario. Haz el código más limpio y profesional sin romper funcionalidades.");
+};
+$("fixBtn").onclick = () => {
+  if (!html) return toast("Primero genera una página");
+  generate("Revisa y corrige cualquier error de JavaScript, HTML o CSS. Asegúrate de que todo funcione correctamente, arregla posibles bugs y mejora la robustez del código.");
+};
+
+$("undo").onclick = () => {
+  if (!versions.length || busy) return;
+  show(versions.pop()); setTab("preview"); toast("Versión anterior");
+};
+$("newBtn").onclick = () => {
+  if (busy) return;
+  if (html && !confirm("¿Empezar una página nueva? Se perderá el trabajo no guardado en el editor actual.")) return;
+  html = ""; versions = []; currentProjId = null;
+  $("frame").srcdoc = ""; $("codeView").textContent = ""; $("codeEdit").value = "";
+  $("empty").style.display = "grid"; $("genTxt").textContent = "Generar";
+  $("prompt").placeholder = "Ej: Una landing para una cafetería…"; $("prompt").value = "";
+  $("undo").disabled = true; $("pfill").style.width = "0"; setStatus("Tu página aparecerá aquí", "");
+  store.set("lumo_draft", "");
+};
+
+/* ---------- Projects management ---------- */
+function loadProjects(){ return store.getJSON("lumo_projects", []); }
+function saveProjects(list){ store.setJSON("lumo_projects", list); updateProjBadge(); }
+function updateProjBadge(){
+  const n = loadProjects().length;
+  const b = $("projBadge");
+  if (n > 0) { b.textContent = n; b.hidden = false; } else b.hidden = true;
+}
+function autoSaveDraft(){
+  if (!html) return;
+  store.setJSON("lumo_draft", { html, updated: Date.now(), prompt: $("prompt").value });
+}
+function restoreDraft(){
+  const d = store.getJSON("lumo_draft", null);
+  if (d && d.html && d.html.length > 50) {
+    html = d.html; show(html); setTab("preview");
+    setStatus("Borrador recuperado", "");
+  }
+}
+$("saveProjBtn").onclick = () => {
+  if (!html) return toast("No hay página para guardar");
+  const name = prompt("Nombre del proyecto:", currentProjId ? (loadProjects().find(p=>p.id===currentProjId)||{}).name || "Mi proyecto" : "Mi proyecto " + new Date().toLocaleDateString());
+  if (!name) return;
+  const list = loadProjects();
+  if (currentProjId) {
+    const i = list.findIndex(p => p.id === currentProjId);
+    if (i >= 0) { list[i].name = name; list[i].html = html; list[i].updated = Date.now(); }
+  } else {
+    const id = Date.now();
+    list.unshift({ id, name, html, updated: Date.now(), fav: false });
+    currentProjId = id;
+  }
+  saveProjects(list);
+  toast("Proyecto guardado ✓");
+  renderProjects();
+};
+
+function renderProjects(){
+  const list = loadProjects();
+  const box = $("projList"); box.innerHTML = "";
+  $("projEmpty").hidden = list.length > 0;
+  list.sort((a,b) => (b.fav?1:0) - (a.fav?1:0) || b.updated - a.updated);
+  list.forEach(p => {
+    const row = document.createElement("div"); row.className = "proj-item";
+    const fav = document.createElement("span"); fav.className = "fav"; fav.textContent = p.fav ? "★" : "☆";
+    fav.onclick = () => { p.fav = !p.fav; saveProjects(list); renderProjects(); };
+    const tx = document.createElement("div"); tx.className = "tx";
+    const b = document.createElement("b"); b.textContent = p.name;
+    const s = document.createElement("small"); s.textContent = new Date(p.updated).toLocaleString() + " · " + (p.html.length/1024).toFixed(1) + " KB";
+    tx.append(b, s);
+    const open = document.createElement("button"); open.className = "tbtn on"; open.textContent = "Abrir";
+    open.onclick = () => {
+      if (html) versions.push(html);
+      currentProjId = p.id; show(p.html); setTab("preview"); go("create");
+      setStatus("Proyecto cargado", p.name);
+    };
+    const dup = document.createElement("button"); dup.className = "tbtn"; dup.textContent = "Dup";
+    dup.onclick = () => {
+      const copy = { id: Date.now(), name: p.name + " (copia)", html: p.html, updated: Date.now(), fav: false };
+      list.unshift(copy); saveProjects(list); renderProjects(); toast("Duplicado");
+    };
+    const del = document.createElement("button"); del.className = "tbtn"; del.innerHTML = icon("trash");
+    del.onclick = () => {
+      if (!confirm("¿Eliminar «" + p.name + "»?")) return;
+      const n = list.filter(x => x.id !== p.id); saveProjects(n); renderProjects();
+      if (currentProjId === p.id) currentProjId = null;
+    };
+    const exp = document.createElement("button"); exp.className = "tbtn"; exp.textContent = "JSON";
+    exp.onclick = () => {
+      const blob = new Blob([JSON.stringify(p,null,2)], {type:"application/json"});
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = p.name.replace(/\W+/g,"_") + ".json"; a.click();
+    };
+    row.append(fav, tx, open, dup, exp, del); box.appendChild(row);
+  });
+}
+$("newProjBtn").onclick = () => { go("create"); $("newBtn").click(); };
+$("importProj").onclick = () => $("importFile").click();
+$("importFile").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const text = await f.text();
+  try {
+    if (f.name.endsWith(".json")) {
+      const p = JSON.parse(text);
+      if (!p.html) throw new Error("JSON sin html");
+      const list = loadProjects();
+      list.unshift({ id: Date.now(), name: p.name || f.name, html: p.html, updated: Date.now(), fav: false });
+      saveProjects(list); renderProjects(); toast("Importado ✓");
+    } else {
+      const list = loadProjects();
+      list.unshift({ id: Date.now(), name: f.name.replace(/\.html$/i,""), html: text, updated: Date.now(), fav: false });
+      saveProjects(list); renderProjects(); toast("HTML importado ✓");
+    }
+  } catch(err) { toast("No se pudo importar: " + err.message); }
+  e.target.value = "";
+};
+
+function refreshDashboard(){
+  const list = loadProjects();
+  $("stProjects").textContent = list.length;
+  $("stGens").textContent = gensCount;
+  $("stFavs").textContent = list.filter(p => p.fav).length;
+  $("stSize").textContent = (list.reduce((a,p) => a + (p.html||"").length, 0) / 1024).toFixed(0);
+  const recent = $("dashRecent"); recent.innerHTML = "";
+  list.slice(0,5).forEach(p => {
+    const row = document.createElement("div"); row.className = "proj-item";
+    const tx = document.createElement("div"); tx.className = "tx";
+    tx.innerHTML = "<b>" + p.name + "</b><small>" + new Date(p.updated).toLocaleString() + "</small>";
+    const open = document.createElement("button"); open.className = "tbtn on"; open.textContent = "Abrir";
+    open.onclick = () => { currentProjId = p.id; show(p.html); setTab("preview"); go("create"); };
+    row.append(tx, open); recent.appendChild(row);
+  });
+  if (!list.length) recent.innerHTML = "<p class='hint'>Aún no hay proyectos. ¡Crea el primero!</p>";
+}
+
+/* ---------- History (original) ---------- */
+function loadHist(){ try { return JSON.parse(store.get("lumo_hist") || "[]"); } catch(e) { return []; } }
+function saveHist(h){ while (true) { try { localStorage.setItem("lumo_hist", JSON.stringify(h)); return; } catch(e) { if (!h.length) return; h.pop(); } } }
+function addHist(p, h){ const l = loadHist(); l.unshift({ id: Date.now(), p: p.slice(0, 120), h }); if (l.length > 12) l.length = 12; saveHist(l); }
+$("btnHist").onclick = () => {
+  const l = loadHist(), box = $("histList"); box.innerHTML = "";
+  if (!l.length) { const p = document.createElement("p"); p.className = "hint"; p.textContent = "Aquí aparecerán tus páginas creadas."; box.appendChild(p); }
+  l.forEach(it => {
+    const row = document.createElement("div"); row.className = "item";
+    const tx = document.createElement("div"); tx.className = "tx";
+    const b = document.createElement("b"); b.textContent = it.p;
+    const s = document.createElement("small"); s.textContent = new Date(it.id).toLocaleString() + " · " + (it.h.length / 1024).toFixed(1) + " KB";
+    tx.append(b, s);
+    const open = document.createElement("button"); open.className = "tbtn on"; open.textContent = "Abrir";
+    open.onclick = () => { if (html) versions.push(html); show(it.h); setTab("preview"); go("create"); closeSheets(); setStatus("Página cargada del historial", ""); };
+    const del = document.createElement("button"); del.className = "tbtn"; del.innerHTML = icon("trash"); del.setAttribute("aria-label", "Borrar");
+    del.onclick = () => { const n = loadHist().filter(x => x.id !== it.id); saveHist(n); row.remove(); };
+    row.append(tx, open, del); box.appendChild(row);
+  });
+  openSheet("sHist");
+};
+
+/* ---------- Copy / Download / Fullscreen / Open tab ---------- */
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); }
+  catch(e){ const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); }
+}
+$("copy").onclick = async () => { if (!html) return toast("Aún no hay código"); await copyText(html); toast("Código copiado ✓"); };
+function downloadHtml(h){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([h], { type: "text/html" }));
+  a.download = "mi-pagina.html"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+$("download").onclick = () => { if (!html) return toast("Aún no hay código"); downloadHtml(html); toast("Descargando…"); };
+$("fs").onclick = () => { if (!html) return toast("Aún no hay página"); $("frameFull").srcdoc = html; $("full").classList.add("on"); };
+$("closeFull").onclick = () => { $("full").classList.remove("on"); $("frameFull").srcdoc = ""; };
+$("openTab").onclick = () => { if (!html) return toast("Aún no hay página"); const u = URL.createObjectURL(new Blob([html], { type: "text/html" })); window.open(u, "_blank"); };
+
+/* ---------- Share (original logic) ---------- */
+function b64u(u8){ let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+function unb64u(s){ s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; const bin = atob(s), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+async function encHtml(str){
+  const bytes = new TextEncoder().encode(str);
+  if ("CompressionStream" in window) {
+    const cs = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+    return "g." + b64u(new Uint8Array(await new Response(cs).arrayBuffer()));
+  }
+  return "r." + b64u(bytes);
+}
+async function decHtml(str){
+  const u = unb64u(str.slice(2));
+  if (str[0] === "g") { const ds = new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip")); return await new Response(ds).text(); }
+  return new TextDecoder().decode(u);
+}
+const isLocal = !/^https?:$/.test(location.protocol);
+const appUrl = () => location.href.split("#")[0];
+async function pageLink(){ return appUrl() + "#p=" + await encHtml(html); }
+
+$("share").onclick = () => {
+  if (!html) return toast("Primero genera una página");
+  $("shareNote").hidden = !isLocal;
+  openSheet("sShare");
+};
+$("shLink").onclick = async () => {
+  const l = await pageLink(); await copyText(l);
+  toast(l.length > 20000 ? "Copiado, pero es muy largo: mejor comparte el archivo" : "Enlace copiado ✓");
+};
+$("shNative").onclick = async () => {
+  const l = await pageLink();
+  if (navigator.share) { try { await navigator.share({ title: "Mira lo que hice con Lumo", text: "Hecho con Lumo ✨", url: l }); } catch(e) {} }
+  else { await copyText(l); toast("Enlace copiado ✓"); }
+};
+$("shWa").onclick = async () => {
+  const l = await pageLink();
+  window.open("https://wa.me/?text=" + encodeURIComponent("Mira lo que hice con Lumo ✨ " + l), "_blank");
+};
+$("shFile").onclick = async () => {
+  const f = new File([html], "mi-pagina.html", { type: "text/html" });
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: "Mi página hecha con Lumo" }); } catch(e) {} }
+  else { downloadHtml(html); toast("Tu navegador no comparte archivos: lo descargué"); }
+};
+$("shTab").onclick = () => { const u = URL.createObjectURL(new Blob([html], { type: "text/html" })); window.open(u, "_blank"); };
+$("shApp").onclick = async () => {
+  if (isLocal) return toast("Sube Lumo a internet para poder invitar con un enlace");
+  if (navigator.share) { try { await navigator.share({ title: "Lumo", text: "Crea páginas web con IA, gratis ✨", url: appUrl() }); } catch(e) {} }
+  else { await copyText(appUrl()); toast("Enlace de Lumo copiado ✓"); }
+};
+
+/* ---------- Tools ---------- */
+function showToolsGrid(){
+  document.querySelectorAll(".tool-panel").forEach(p => p.classList.remove("on"));
+  $("toolsGrid").style.display = "grid";
+}
+document.querySelectorAll(".tool-card").forEach(c => c.onclick = () => {
+  $("toolsGrid").style.display = "none";
+  document.querySelectorAll(".tool-panel").forEach(p => p.classList.remove("on"));
+  const panel = $("tool-" + c.dataset.tool);
+  if (panel) panel.classList.add("on");
+  if (c.dataset.tool === "tts") loadVoices();
+});
+document.querySelectorAll("[data-back]").forEach(b => b.onclick = showToolsGrid);
+
+/* TTS */
+let voices = [];
+function loadVoices(){
+  voices = speechSynthesis.getVoices().filter(v => /es|en|pt|fr|it|de/i.test(v.lang));
+  if (!voices.length) voices = speechSynthesis.getVoices();
+  $("ttsVoice").innerHTML = voices.map((v,i) => `<option value="${i}">${v.name} (${v.lang})</option>`).join("");
+}
+speechSynthesis.onvoiceschanged = loadVoices;
+$("ttsPlay").onclick = () => {
+  const t = $("ttsText").value.trim(); if (!t) return toast("Escribe texto");
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t);
+  const v = voices[$("ttsVoice").value]; if (v) u.voice = v;
+  u.rate = parseFloat($("ttsRate").value); u.pitch = parseFloat($("ttsPitch").value);
+  speechSynthesis.speak(u);
+};
+$("ttsStop").onclick = () => speechSynthesis.cancel();
+
+/* Sound lab */
+let audioCtx = null, currentOsc = null, lastWav = null;
+function getCtx(){ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+$("sndPlay").onclick = () => {
+  const ctx = getCtx();
+  if (currentOsc) { try { currentOsc.stop(); } catch(e){} }
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = $("sndType").value;
+  osc.frequency.value = parseFloat($("sndFreq").value) || 440;
+  const dur = parseFloat($("sndDur").value) || 0.5;
+  gain.gain.setValueAtTime(0.3, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + dur);
+  currentOsc = osc;
+  // Record for WAV export
+  const dest = ctx.createMediaStreamDestination();
+  osc.connect(dest);
+};
+$("sndStop").onclick = () => { if (currentOsc) try { currentOsc.stop(); } catch(e){} };
+$("sndExport").onclick = () => {
+  // Simple offline render for a short tone
+  const freq = parseFloat($("sndFreq").value) || 440;
+  const dur = parseFloat($("sndDur").value) || 0.5;
+  const type = $("sndType").value;
+  const sampleRate = 44100;
+  const length = Math.floor(sampleRate * dur);
+  const offline = new OfflineAudioContext(1, length, sampleRate);
+  const osc = offline.createOscillator();
+  const gain = offline.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.4, 0);
+  gain.gain.exponentialRampToValueAtTime(0.001, dur);
+  osc.connect(gain); gain.connect(offline.destination);
+  osc.start(); osc.stop(dur);
+  offline.startRendering().then(buf => {
+    const samples = buf.getChannelData(0);
+    const wav = encodeWav(samples, sampleRate);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([wav], {type:"audio/wav"}));
+    a.download = "tono-" + freq + "hz.wav"; a.click();
+    toast("WAV descargado");
+  });
+};
+function encodeWav(samples, sampleRate){
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const writeStr = (o,s) => { for (let i=0;i<s.length;i++) view.setUint8(o+i, s.charCodeAt(i)); };
+  writeStr(0,"RIFF"); view.setUint32(4, 36 + samples.length * 2, true); writeStr(8,"WAVE");
+  writeStr(12,"fmt "); view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true);
+  view.setUint32(24,sampleRate,true); view.setUint32(28,sampleRate*2,true); view.setUint16(32,2,true); view.setUint16(34,16,true);
+  writeStr(36,"data"); view.setUint32(40, samples.length * 2, true);
+  let off = 44;
+  for (let i=0;i<samples.length;i++,off+=2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return buffer;
+}
+
+/* Colors */
+function hexToHsl(hex){
+  let r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b); let h,s,l = (max+min)/2;
+  if (max === min) h = s = 0;
+  else {
+    const d = max - min; s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){ case r: h = (g-b)/d + (g<b?6:0); break; case g: h = (b-r)/d + 2; break; case b: h = (r-g)/d + 4; break; }
+    h /= 6;
+  }
+  return [h*360, s*100, l*100];
+}
+function hslToHex(h,s,l){
+  s/=100; l/=100;
+  const a = s * Math.min(l,1-l);
+  const f = n => { const k = (n + h/30) % 12; const c = l - a * Math.max(Math.min(k-3,9-k,1),-1); return Math.round(255*c).toString(16).padStart(2,"0"); };
+  return "#" + f(0) + f(8) + f(4);
+}
+$("genPalette").onclick = () => {
+  const [h,s,l] = hexToHsl($("baseColor").value);
+  const type = $("paletteType").value;
+  let cols = [];
+  if (type === "analogous") cols = [0,-30,30,-60,60].map(d => hslToHex((h+d+360)%360, s, l));
+  else if (type === "complementary") cols = [0,180,-30,150,30].map(d => hslToHex((h+d+360)%360, s, l));
+  else if (type === "triadic") cols = [0,120,240,-40,80].map(d => hslToHex((h+d+360)%360, s, l));
+  else cols = [0,0,0,0,0].map((_,i) => hslToHex(h, s, Math.max(10, Math.min(90, l + (i-2)*15))));
+  const box = $("paletteOut"); box.innerHTML = "";
+  cols.forEach(c => {
+    const sp = document.createElement("span"); sp.style.background = c; sp.title = c;
+    sp.onclick = () => { copyText(c); toast(c + " copiado"); };
+    box.appendChild(sp);
+  });
+  $("genPalette").dataset.cols = cols.join(",");
+};
+$("copyPalette").onclick = () => {
+  const cols = ($("genPalette").dataset.cols || "").split(",").filter(Boolean);
+  if (!cols.length) return toast("Genera una paleta primero");
+  const css = cols.map((c,i) => `--c${i+1}: ${c};`).join("\n");
+  copyText(css); toast("Variables CSS copiadas");
+};
+
+/* Names */
+const NAME_PARTS = {
+  prefixes: ["Nova","Luma","Velo","Apex","Pixel","Flux","Orbit","Spark","Nexa","Pulse","Zen","Echo","Aether","Prism","Quark"],
+  suffixes: ["ly","io","hub","lab","fy","base","craft","flow","kit","stack","ware","space","desk","box","pad"]
+};
+$("genNames").onclick = () => {
+  const seed = $("nameSeed").value.trim().toLowerCase();
+  const out = $("namesOut"); out.innerHTML = "";
+  const names = new Set();
+  while (names.size < 8) {
+    const p = NAME_PARTS.prefixes[Math.floor(Math.random()*NAME_PARTS.prefixes.length)];
+    const s = NAME_PARTS.suffixes[Math.floor(Math.random()*NAME_PARTS.suffixes.length)];
+    let n = p + s;
+    if (seed) n = seed.charAt(0).toUpperCase() + seed.slice(1) + s;
+    names.add(n);
+  }
+  [...names].forEach(n => {
+    const row = document.createElement("div"); row.className = "item";
+    row.innerHTML = `<div class="tx"><b>${n}</b></div>`;
+    const btn = document.createElement("button"); btn.className = "tbtn"; btn.textContent = "Usar";
+    btn.onclick = () => { $("prompt").value = ( $("prompt").value + " Llámalo " + n ).trim(); go("create"); toast("Nombre añadido al prompt"); };
+    row.appendChild(btn); out.appendChild(row);
+  });
+};
+
+/* Ideas */
+const IDEAS = {
+  web: ["Landing de una app de finanzas personales con calculadora de ahorro","Sitio para un fotógrafo con galería filtrable y formulario de reservas","Página de un podcast con episodios, reproductor y newsletter"],
+  app: ["Conversor de unidades con historial y favoritos","Gestor de hábitos con rachas y recordatorios visuales","Pomodoro + lista de tareas combinados"],
+  game: ["Juego de mecanografía con niveles y ranking local","Quiz de cultura general con temporizador","Memory con temas personalizables"],
+  business: ["Menú digital para una cafetería con pedidos por WhatsApp","Página de un gimnasio con horarios y reserva de clases","Landing de un servicio de limpieza a domicilio"]
+};
+$("genIdeas").onclick = () => {
+  const cat = $("ideaCat").value;
+  const list = IDEAS[cat] || IDEAS.web;
+  const out = $("ideasOut"); out.innerHTML = "";
+  list.forEach(idea => {
+    const row = document.createElement("div"); row.className = "item";
+    row.innerHTML = `<div class="tx"><b style="white-space:normal;font-weight:500">${idea}</b></div>`;
+    const btn = document.createElement("button"); btn.className = "tbtn on"; btn.textContent = "Usar";
+    btn.onclick = () => { $("prompt").value = "Crea " + idea.charAt(0).toLowerCase() + idea.slice(1); go("create"); };
+    row.appendChild(btn); out.appendChild(row);
+  });
+};
+
+/* Video prompts */
+$("genVidPrompt").onclick = () => {
+  const style = $("vidStyle").value;
+  const idea = $("vidIdea").value.trim() || "un producto moderno en una mesa";
+  const templates = {
+    cinematic: `Cinematic shot of ${idea}, dramatic lighting, shallow depth of field, film grain, 35mm lens, slow camera push-in, moody atmosphere, highly detailed, 4K`,
+    product: `Clean product showcase of ${idea}, soft studio lighting, rotating turntable, white seamless background, commercial look, sharp focus, 4K`,
+    anime: `Anime style scene of ${idea}, vibrant colors, dynamic composition, Studio Ghibli inspired, detailed background, smooth animation feel`,
+    ugc: `Realistic handheld UGC style video of ${idea}, natural lighting, authentic feel, slight camera shake, casual setting, vertical 9:16`,
+    abstract: `Abstract motion graphics inspired by ${idea}, fluid shapes, gradient meshes, particle systems, smooth transitions, modern tech aesthetic`
+  };
+  $("vidOut").value = templates[style] || templates.cinematic;
+};
+$("copyVid").onclick = () => { copyText($("vidOut").value); toast("Prompt copiado"); };
+
+/* Format / minify */
+$("doFormat").onclick = () => {
+  let t = $("fmtIn").value;
+  // Very basic pretty print for HTML-ish
+  t = t.replace(/></g, ">\n<").replace(/\n{3,}/g, "\n\n");
+  $("fmtOut").value = t;
+};
+$("doMinify").onclick = () => {
+  let t = $("fmtIn").value;
+  t = t.replace(/<!--[\s\S]*?-->/g,"").replace(/\s+/g," ").replace(/> </g,"><").trim();
+  $("fmtOut").value = t;
+};
+$("copyFmt").onclick = () => { copyText($("fmtOut").value); toast("Copiado"); };
+
+/* SEO */
+$("genSeo").onclick = () => {
+  const title = $("seoTitle").value.trim() || "Mi página";
+  const desc = $("seoDesc").value.trim() || "Descripción de la página";
+  const url = $("seoUrl").value.trim();
+  let out = `<title>${title}</title>\n<meta name="description" content="${desc}">\n<meta property="og:title" content="${title}">\n<meta property="og:description" content="${desc}">\n<meta name="twitter:card" content="summary_large_image">`;
+  if (url) out += `\n<link rel="canonical" href="${url}">\n<meta property="og:url" content="${url}">`;
+  $("seoOut").value = out;
+};
+$("copySeo").onclick = () => { copyText($("seoOut").value); toast("Copiado"); };
+
+/* Counter */
+$("cntText").addEventListener("input", () => {
+  const t = $("cntText").value;
+  $("cChars").textContent = t.length;
+  $("cWords").textContent = t.trim() ? t.trim().split(/\s+/).length : 0;
+  $("cLines").textContent = t ? t.split("\n").length : 0;
+});
+
+/* Favicon */
+function updateFav(){
+  const txt = $("favText").value || "L";
+  const bg = $("favBg").value;
+  $("favPreview").style.background = bg;
+  $("favPreview").textContent = txt;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${bg}"/><text x="32" y="42" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="28" fill="#fff">${txt}</text></svg>`;
+  $("favCode").value = svg;
+}
+$("genFav").onclick = updateFav;
+$("favText").oninput = updateFav; $("favBg").oninput = updateFav;
+$("dlFav").onclick = () => {
+  updateFav();
+  const a = document.createElement("a");
+  a.href = "data:image/svg+xml," + encodeURIComponent($("favCode").value);
+  a.download = "favicon.svg"; a.click();
+};
+updateFav();
+
+/* ---------- PWA manifest ---------- */
+(function(){
+  const manifest = {
+    name: "Lumo Studio",
+    short_name: "Lumo",
+    description: "Crea páginas web con IA",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#0b1226",
+    theme_color: "#2563eb",
+    icons: [{
+      src: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#2563eb"/><path d="M26 22 16 32l10 10M38 22l10 10-10 10" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/></svg>'),
+      sizes: "any",
+      type: "image/svg+xml",
+      purpose: "any maskable"
+    }]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:"application/json"});
+  $("manifestLink").href = URL.createObjectURL(blob);
+})();
+
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); deferredPrompt = e;
+  $("installPwa").hidden = false;
+});
+$("installPwa").onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null; $("installPwa").hidden = true;
+};
+
+/* ---------- Viewer mode (shared links) ---------- */
+(async function boot(){
+  const m = location.hash.match(/^#p=(.+)$/);
+  if (!m) {
+    $("viewer").hidden = true;
+    if (S.keys.gemini) loadGeminiModels();
+    else openSheetOnce();
+    restoreDraft();
+    updateProjBadge();
+    go("dashboard");
+    return;
+  }
+  try {
+    const shared = await decHtml(m[1]);
+    $("vframe").srcdoc = shared; $("viewer").hidden = false;
+    $("vDl").onclick = () => downloadHtml(shared);
+    const leave = () => { history.replaceState(null, "", location.pathname + location.search); $("viewer").hidden = true; $("vframe").srcdoc = ""; };
+    $("vMine").onclick = leave;
+    $("vEdit").onclick = () => { leave(); show(shared); setTab("preview"); go("create"); setStatus("Página compartida cargada: ahora puedes editarla", ""); if (!S.keys[S.provider]) openSheet("sSettings"); };
+  } catch(e) { $("viewer").hidden = true; toast("El enlace está dañado"); }
+})();
+function openSheetOnce(){ if (!S.keys.gemini && !S.keys.claude) setTimeout(() => openSheet("sSettings"), 500); }
+$("viewer").hidden = !/^#p=/.test(location.hash);
+
+// Initial icons for dynamic buttons
+document.querySelectorAll(".nav-item[data-ic], .bnav [data-ic]").forEach(el => {
+  if (!el.querySelector("svg") && el.dataset.ic) el.insertAdjacentHTML("afterbegin", icon(el.dataset.ic));
+});
+</script>
+</body>
+</html>
